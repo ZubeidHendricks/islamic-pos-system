@@ -8,6 +8,8 @@ public class TransactionItemConfiguration : IEntityTypeConfiguration<Transaction
 {
     public void Configure(EntityTypeBuilder<TransactionItem> builder)
     {
+        builder.HasKey(ti => ti.Id);
+
         builder.Property(ti => ti.ProductName)
             .IsRequired()
             .HasMaxLength(200);
@@ -18,5 +20,14 @@ public class TransactionItemConfiguration : IEntityTypeConfiguration<Transaction
 
         builder.Property(ti => ti.Quantity)
             .IsRequired();
+
+        builder.Property(ti => ti.Subtotal)
+            .HasColumnType("decimal(18,2)")
+            .IsRequired();
+
+        builder.HasOne<Product>()
+            .WithMany()
+            .HasForeignKey(ti => ti.ProductId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

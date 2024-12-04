@@ -27,7 +27,17 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.Property(p => p.Category)
             .HasMaxLength(100);
 
+        builder.Property(p => p.CreatedAt)
+            .IsRequired()
+            .HasDefaultValueSql("GETUTCDATE()");
+
         builder.HasIndex(p => p.Barcode)
-            .IsUnique();
+            .IsUnique()
+            .HasFilter("[Barcode] IS NOT NULL");
+
+        builder.HasMany(p => p.StockMovements)
+            .WithOne(sm => sm.Product)
+            .HasForeignKey(sm => sm.ProductId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }
