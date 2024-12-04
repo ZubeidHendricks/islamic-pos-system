@@ -1,0 +1,149 @@
+@page "/suppliers"
+@using IslamicPOS.Core.Models
+@using IslamicPOS.Core.Models.InventoryManagement
+@using IslamicPOS.Core.Services
+@attribute [Authorize(Roles = "Admin,Manager")]
+@inject ISupplierService SupplierService
+@inject IPurchaseOrderService PurchaseOrderService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <!-- Previous content... -->
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            _loading = true;
+            var suppliersTask = SupplierService.GetAllSuppliers();
+            var performanceTask = SupplierService.GetSupplierPerformance(
+                DateTime.UtcNow.AddMonths(-3),
+                DateTime.UtcNow);
+
+            await Task.WhenAll(suppliersTask, performanceTask);
+
+            _suppliers = await suppliersTask;
+            _performance = await performanceTask;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private int GetPerformanceRating(SupplierPerformance perf)
+    {
+        if (perf.TotalOrders == 0) return 0;
+
+        return perf.OnTimeDeliveryRate switch
+        {
+            >= 95 => 5,
+            >= 90 => 4,
+            >= 80 => 3,
+            >= 70 => 2,
+            _ => 1
+        };
+    }
+
+    private async Task AddSupplier()
+    {
+        var dialog = await DialogService.ShowAsync<SupplierDialog>("Add Supplier");
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            var supplier = (Supplier)result.Data;
+            await SupplierService.CreateSupplier(supplier);
+            await LoadData();
+            Snackbar.Add("Supplier added successfully", Severity.Success);
+        }
+    }
+
+    private async Task EditSupplier(Supplier supplier)
+    {
+        var parameters = new DialogParameters
+        {
+            { "Supplier", supplier }
+        };
+
+        var dialog = await DialogService.ShowAsync<SupplierDialog>("Edit Supplier", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            var updatedSupplier = (Supplier)result.Data;
+            await SupplierService.UpdateSupplier(updatedSupplier);
+            await LoadData();
+            Snackbar.Add("Supplier updated successfully", Severity.Success);
+        }
+    }
+
+    private async Task ViewOrders(Supplier supplier)
+    {
+        var parameters = new DialogParameters
+        {
+            { "SupplierId", supplier.Id },
+            { "SupplierName", supplier.Name }
+        };
+
+        var dialog = await DialogService.ShowAsync<SupplierOrdersDialog>("Supplier Orders", parameters);
+        await dialog.Result;
+    }
+
+    private async Task ViewPerformance(Supplier supplier)
+    {
+        var parameters = new DialogParameters
+        {
+            { "SupplierId", supplier.Id },
+            { "SupplierName", supplier.Name },
+            { "Performance", _performance?.FirstOrDefault(p => p.SupplierId == supplier.Id) }
+        };
+
+        var dialog = await DialogService.ShowAsync<SupplierPerformanceDialog>("Supplier Performance", parameters);
+        await dialog.Result;
+    }
+
+    private async Task ToggleStatus(Supplier supplier)
+    {
+        var action = supplier.IsActive ? "deactivate" : "activate";
+        var confirm = await DialogService.ShowMessageBox(
+            $"{char.ToUpper(action[0]) + action[1..]} Supplier",
+            $"Are you sure you want to {action} {supplier.Name}?",
+            yesText: "Yes",
+            noText: "No");
+
+        if (confirm ?? false)
+        {
+            supplier.IsActive = !supplier.IsActive;
+            await SupplierService.UpdateSupplier(supplier);
+            await LoadData();
+            Snackbar.Add($"Supplier {action}d successfully", Severity.Success);
+        }
+    }
+
+    private bool Filter(Supplier supplier) =>
+        string.IsNullOrWhiteSpace(_searchString) ||
+        supplier.Name.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
+        supplier.ContactPerson.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
+        supplier.Email.Contains(_searchString, StringComparison.OrdinalIgnoreCase);
+
+    private IEnumerable<Supplier> Sort(List<Supplier> suppliers, string field, SortDirection direction)
+    {
+        return field switch
+        {
+            nameof(Supplier.Name) => direction == SortDirection.Ascending 
+                ? suppliers.OrderBy(s => s.Name)
+                : suppliers.OrderByDescending(s => s.Name),
+            nameof(Supplier.ContactPerson) => direction == SortDirection.Ascending
+                ? suppliers.OrderBy(s => s.ContactPerson)
+                : suppliers.OrderByDescending(s => s.ContactPerson),
+            _ => suppliers
+        };
+    }
+}
