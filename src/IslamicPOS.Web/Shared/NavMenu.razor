@@ -1,6 +1,90 @@
+@using Microsoft.AspNetCore.Identity
+@using IslamicPOS.Core.Models
+@inject NavigationManager NavigationManager
+@inject UserManager<ApplicationUser> UserManager
+
 <MudNavMenu>
-    <MudNavLink Href="" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">Home</MudNavLink>
-    <MudNavLink Href="pos" Icon="@Icons.Material.Filled.ShoppingCart">POS Terminal</MudNavLink>
-    <MudNavLink Href="zakaah" Icon="@Icons.Material.Filled.Calculate">Zakaah Calculator</MudNavLink>
-    <MudNavLink Href="profit-sharing" Icon="@Icons.Material.Filled.PieChart">Profit Sharing</MudNavLink>
+    <MudText Typo="Typo.subtitle2" Class="px-4 mt-2 mud-text-secondary">General</MudText>
+    
+    <MudNavLink Href="" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard">
+        Dashboard
+    </MudNavLink>
+
+    <AuthorizeView Roles="Admin,Manager,Cashier">
+        <Authorized>
+            <MudNavLink Href="pos" Icon="@Icons.Material.Filled.ShoppingCart">
+                POS Terminal
+            </MudNavLink>
+        </Authorized>
+    </AuthorizeView>
+
+    <AuthorizeView Roles="Admin,Manager">
+        <Authorized>
+            <MudNavGroup Title="Inventory" Icon="@Icons.Material.Filled.Inventory" Expanded="true">
+                <MudNavLink Href="inventory/products" Icon="@Icons.Material.Filled.Category">
+                    Products
+                </MudNavLink>
+                <MudNavLink Href="inventory/alerts" Icon="@Icons.Material.Filled.Warning">
+                    Stock Alerts
+                </MudNavLink>
+            </MudNavGroup>
+
+            <MudNavGroup Title="Purchasing" Icon="@Icons.Material.Filled.ShoppingBasket" Expanded="true">
+                <MudNavLink Href="suppliers" Icon="@Icons.Material.Filled.Business">
+                    Suppliers
+                </MudNavLink>
+                <MudNavLink Href="purchase-orders" Icon="@Icons.Material.Filled.Receipt">
+                    Purchase Orders
+                </MudNavLink>
+            </MudNavGroup>
+        </Authorized>
+    </AuthorizeView>
+
+    <MudNavGroup Title="Islamic Finance" Icon="@Icons.Material.Filled.AccountBalance" Expanded="true">
+        <MudNavLink Href="zakaah-calculator" Icon="@Icons.Material.Filled.Calculate">
+            Zakaah Calculator
+        </MudNavLink>
+        <MudNavLink Href="profit-sharing" Icon="@Icons.Material.Filled.PieChart">
+            Profit Sharing
+        </MudNavLink>
+        <MudNavLink Href="finance-reports" Icon="@Icons.Material.Filled.Assessment">
+            Finance Reports
+        </MudNavLink>
+    </MudNavGroup>
+
+    <AuthorizeView Roles="Admin,Manager">
+        <Authorized>
+            <MudText Typo="Typo.subtitle2" Class="px-4 mt-4 mud-text-secondary">Reports</MudText>
+            
+            <MudNavGroup Title="Reports" Icon="@Icons.Material.Filled.InsertChart" Expanded="true">
+                <MudNavLink Href="reports/sales" Icon="@Icons.Material.Filled.TrendingUp">
+                    Sales Reports
+                </MudNavLink>
+                <MudNavLink Href="reports/inventory" Icon="@Icons.Material.Filled.Ballot">
+                    Inventory Reports
+                </MudNavLink>
+                <MudNavLink Href="reports/transactions" Icon="@Icons.Material.Filled.Receipt">
+                    Transaction History
+                </MudNavLink>
+            </MudNavGroup>
+        </Authorized>
+    </AuthorizeView>
+
+    <AuthorizeView Roles="Admin">
+        <Authorized>
+            <MudText Typo="Typo.subtitle2" Class="px-4 mt-4 mud-text-secondary">Administration</MudText>
+            
+            <MudNavGroup Title="Settings" Icon="@Icons.Material.Filled.Settings" Expanded="true">
+                <MudNavLink Href="users" Icon="@Icons.Material.Filled.People">
+                    User Management
+                </MudNavLink>
+                <MudNavLink Href="settings" Icon="@Icons.Material.Filled.Build">
+                    System Settings
+                </MudNavLink>
+                <MudNavLink Href="audit-log" Icon="@Icons.Material.Filled.History">
+                    Audit Log
+                </MudNavLink>
+            </MudNavGroup>
+        </Authorized>
+    </AuthorizeView>
 </MudNavMenu>
