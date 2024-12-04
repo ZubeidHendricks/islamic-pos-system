@@ -1,0 +1,135 @@
+@using IslamicPOS.Core.Models.InventoryManagement
+
+<MudDialog>
+    <DialogContent>
+        <MudContainer Style="max-height: 500px; overflow-y: auto; padding: 0;">
+            <MudGrid>
+                <!-- Order Header -->
+                <MudItem xs="12">
+                    <MudPaper Class="pa-4" Elevation="0">
+                        <MudGrid>
+                            <MudItem xs="12" md="6">
+                                <MudText><strong>Order #:</strong> @Order.OrderNumber</MudText>
+                                <MudText><strong>Supplier:</strong> @Order.Supplier.Name</MudText>
+                                <MudText><strong>Order Date:</strong> @Order.OrderDate.ToString("MMM dd, yyyy")</MudText>
+                            </MudItem>
+                            <MudItem xs="12" md="6">
+                                <MudText><strong>Status:</strong>
+                                    <MudChip Color="@GetStatusColor(Order.Status)" Size="Size.Small" Class="ml-2">
+                                        @Order.Status
+                                    </MudChip>
+                                </MudText>
+                                <MudText><strong>Expected Delivery:</strong> 
+                                    @(Order.ExpectedDeliveryDate?.ToString("MMM dd, yyyy") ?? "-")
+                                </MudText>
+                                <MudText><strong>Total Amount:</strong> @Order.TotalAmount.ToString("C")</MudText>
+                            </MudItem>
+                        </MudGrid>
+                    </MudPaper>
+                </MudItem>
+
+                <!-- Order Items -->
+                <MudItem xs="12">
+                    <MudText Typo="Typo.h6" Class="mb-4">Order Items</MudText>
+                    <MudTable Items="@Order.Items" Dense="true" Hover="true">
+                        <HeaderContent>
+                            <MudTh>Product</MudTh>
+                            <MudTh>Quantity</MudTh>
+                            <MudTh>Unit Cost</MudTh>
+                            <MudTh>Subtotal</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="Product">@context.Product.Name</MudTd>
+                            <MudTd DataLabel="Quantity">@context.Quantity</MudTd>
+                            <MudTd DataLabel="Unit Cost">@context.UnitCost.ToString("C")</MudTd>
+                            <MudTd DataLabel="Subtotal">@context.Subtotal.ToString("C")</MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                </MudItem>
+
+                <!-- Order Timeline -->
+                <MudItem xs="12" Class="mt-4">
+                    <MudText Typo="Typo.h6" Class="mb-4">Order Timeline</MudText>
+                    <MudTimeline>
+                        <MudTimelineItem Color="Color.Success" Size="Size.Small">
+                            <ItemContent>
+                                <MudText Color="Color.Success">Order Created</MudText>
+                                <MudText Typo="Typo.body2">@Order.OrderDate.ToString("MMM dd, yyyy HH:mm")</MudText>
+                            </ItemContent>
+                        </MudTimelineItem>
+
+                        @if (Order.Status != "Draft")
+                        {
+                            <MudTimelineItem Color="Color.Info" Size="Size.Small">
+                                <ItemContent>
+                                    <MudText Color="Color.Info">Order Confirmed</MudText>
+                                    <MudText Typo="Typo.body2">@Order.OrderDate.AddDays(1).ToString("MMM dd, yyyy HH:mm")</MudText>
+                                </ItemContent>
+                            </MudTimelineItem>
+                        }
+
+                        @if (Order.Status == "Received")
+                        {
+                            <MudTimelineItem Color="Color.Success" Size="Size.Small">
+                                <ItemContent>
+                                    <MudText Color="Color.Success">Order Received</MudText>
+                                    <MudText Typo="Typo.body2">@Order.LastUpdated?.ToString("MMM dd, yyyy HH:mm")</MudText>
+                                </ItemContent>
+                            </MudTimelineItem>
+                        }
+
+                        @if (Order.Status == "Cancelled")
+                        {
+                            <MudTimelineItem Color="Color.Error" Size="Size.Small">
+                                <ItemContent>
+                                    <MudText Color="Color.Error">Order Cancelled</MudText>
+                                    <MudText Typo="Typo.body2">@Order.LastUpdated?.ToString("MMM dd, yyyy HH:mm")</MudText>
+                                </ItemContent>
+                            </MudTimelineItem>
+                        }
+                    </MudTimeline>
+                </MudItem>
+
+                <!-- Notes -->
+                @if (!string.IsNullOrEmpty(Order.Notes))
+                {
+                    <MudItem xs="12">
+                        <MudExpansionPanel>
+                            <TitleContent>
+                                <MudText><strong>Notes</strong></MudText>
+                            </TitleContent>
+                            <ChildContent>
+                                <MudText>@Order.Notes</MudText>
+                            </ChildContent>
+                        </MudExpansionPanel>
+                    </MudItem>
+                }
+            </MudGrid>
+        </MudContainer>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Close">Close</MudButton>
+        @if (Order.Status == "Confirmed")
+        {
+            <MudButton Color="Color.Primary" 
+                      OnClick="() => OnReceiveOrder.InvokeAsync(Order)">Receive Order</MudButton>
+        }
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public PurchaseOrder Order { get; set; } = null!;
+    [Parameter] public EventCallback<PurchaseOrder> OnReceiveOrder { get; set; }
+
+    private Color GetStatusColor(string status) => status switch
+    {
+        "Draft" => Color.Info,
+        "Confirmed" => Color.Warning,
+        "Received" => Color.Success,
+        "Cancelled" => Color.Error,
+        _ => Color.Default
+    };
+
+    private void Close() => MudDialog.Close();
+}
