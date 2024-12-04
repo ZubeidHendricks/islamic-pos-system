@@ -1,0 +1,240 @@
+@page "/inventory/purchase-orders"
+@using IslamicPOS.Core.Models.InventoryManagement
+@using IslamicPOS.Core.Services
+@attribute [Authorize(Roles = "Admin,Manager")]
+@inject IPurchaseOrderService PurchaseOrderService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <MudPaper Class="pa-4">
+        <MudGrid>
+            <!-- Summary Stats -->
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Class="pa-4" Elevation="2">
+                    <MudStack>
+                        <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" Color="Color.Info" Size="Size.Large" />
+                        <MudText Typo="Typo.h5">@(_orders?.Count(o => o.Status == "Draft") ?? 0)</MudText>
+                        <MudText>Draft Orders</MudText>
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Class="pa-4" Elevation="2">
+                    <MudStack>
+                        <MudIcon Icon="@Icons.Material.Filled.LocalShipping" Color="Color.Warning" Size="Size.Large" />
+                        <MudText Typo="Typo.h5">@(_orders?.Count(o => o.Status == "Confirmed") ?? 0)</MudText>
+                        <MudText>Pending Delivery</MudText>
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Class="pa-4" Elevation="2">
+                    <MudStack>
+                        <MudIcon Icon="@Icons.Material.Filled.Done" Color="Color.Success" Size="Size.Large" />
+                        <MudText Typo="Typo.h5">@(_orders?.Count(o => o.Status == "Received") ?? 0)</MudText>
+                        <MudText>Completed Orders</MudText>
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Class="pa-4" Elevation="2">
+                    <MudStack>
+                        <MudIcon Icon="@Icons.Material.Filled.MonetizationOn" Color="Color.Primary" Size="Size.Large" />
+                        <MudText Typo="Typo.h5">@(_orders?.Sum(o => o.TotalAmount).ToString("C") ?? "$0.00")</MudText>
+                        <MudText>Total Orders Value</MudText>
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+
+            <!-- Orders Table -->
+            <MudItem xs="12">
+                <MudDataGrid T="PurchaseOrder"
+                            Items="@_orders"
+                            Dense="true"
+                            Hover="true"
+                            Loading="_loading"
+                            FilterMode="DataGridFilterMode.Simple"
+                            FilterCaseSensitivity="DataGridFilterCaseSensitivity.CaseInsensitive">
+                    <ToolBarContent>
+                        <MudText Typo="Typo.h6">Purchase Orders</MudText>
+                        <MudSpacer />
+                        <MudButton Color="Color.Primary"
+                                  OnClick="CreateNewOrder"
+                                  DisableElevation="true"
+                                  Variant="Variant.Filled"
+                                  StartIcon="@Icons.Material.Filled.Add">
+                            New Order
+                        </MudButton>
+                    </ToolBarContent>
+
+                    <Columns>
+                        <PropertyColumn Property="x => x.OrderNumber" Title="Order #" Sortable="true" />
+                        <PropertyColumn Property="x => x.Supplier.Name" Title="Supplier" Sortable="true" />
+                        <PropertyColumn Property="x => x.OrderDate" Title="Order Date" Sortable="true">
+                            <CellTemplate>@context.Item.OrderDate.ToString("MMM dd, yyyy")</CellTemplate>
+                        </PropertyColumn>
+                        <PropertyColumn Property="x => x.ExpectedDeliveryDate" Title="Expected Delivery">
+                            <CellTemplate>@(context.Item.ExpectedDeliveryDate?.ToString("MMM dd, yyyy") ?? "-")</CellTemplate>
+                        </PropertyColumn>
+                        <PropertyColumn Property="x => x.TotalAmount" Title="Total" Sortable="true">
+                            <CellTemplate>@context.Item.TotalAmount.ToString("C")</CellTemplate>
+                        </PropertyColumn>
+                        <PropertyColumn Property="x => x.Status" Title="Status" Sortable="true">
+                            <CellTemplate>
+                                <MudChip Color="@GetStatusColor(context.Item.Status)" Size="Size.Small">
+                                    @context.Item.Status
+                                </MudChip>
+                            </CellTemplate>
+                        </PropertyColumn>
+                        <TemplateColumn Title="Actions" TextAlign="TextAlign.Right">
+                            <CellTemplate>
+                                <MudMenu Icon="@Icons.Material.Filled.MoreVert" Dense="true" AnchorOrigin="Origin.BottomRight">
+                                    <MudMenuItem OnClick="() => ViewOrder(context.Item)">View Details</MudMenuItem>
+                                    @if (context.Item.Status == "Draft")
+                                    {
+                                        <MudMenuItem OnClick="() => EditOrder(context.Item)">Edit</MudMenuItem>
+                                        <MudMenuItem OnClick="() => ConfirmOrder(context.Item)">Confirm Order</MudMenuItem>
+                                        <MudMenuItem OnClick="() => DeleteOrder(context.Item)" Style="color: var(--mud-palette-error);">Delete</MudMenuItem>
+                                    }
+                                    @if (context.Item.Status == "Confirmed")
+                                    {
+                                        <MudMenuItem OnClick="() => ReceiveOrder(context.Item)">Receive Order</MudMenuItem>
+                                    }
+                                </MudMenu>
+                            </CellTemplate>
+                        </TemplateColumn>
+                    </Columns>
+
+                    <PagerContent>
+                        <MudDataGridPager T="PurchaseOrder" />
+                    </PagerContent>
+                </MudDataGrid>
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private List<PurchaseOrder>? _orders;
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadOrders();
+    }
+
+    private async Task LoadOrders()
+    {
+        try
+        {
+            _loading = true;
+            _orders = await PurchaseOrderService.GetPurchaseOrders();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private Color GetStatusColor(string status) => status switch
+    {
+        "Draft" => Color.Info,
+        "Confirmed" => Color.Warning,
+        "Received" => Color.Success,
+        "Cancelled" => Color.Error,
+        _ => Color.Default
+    };
+
+    private async Task CreateNewOrder()
+    {
+        var dialog = await DialogService.ShowAsync<CreatePurchaseOrderDialog>("Create Purchase Order");
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await LoadOrders();
+            Snackbar.Add("Purchase order created successfully", Severity.Success);
+        }
+    }
+
+    private async Task ViewOrder(PurchaseOrder order)
+    {
+        var parameters = new DialogParameters
+        {
+            { "Order", order }
+        };
+
+        var dialog = await DialogService.ShowAsync<PurchaseOrderDetailsDialog>("Order Details", parameters);
+        await dialog.Result;
+    }
+
+    private async Task EditOrder(PurchaseOrder order)
+    {
+        var parameters = new DialogParameters
+        {
+            { "Order", order }
+        };
+
+        var dialog = await DialogService.ShowAsync<EditPurchaseOrderDialog>("Edit Order", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await LoadOrders();
+            Snackbar.Add("Purchase order updated successfully", Severity.Success);
+        }
+    }
+
+    private async Task ConfirmOrder(PurchaseOrder order)
+    {
+        var confirm = await DialogService.ShowMessageBox(
+            "Confirm Order",
+            "Are you sure you want to confirm this order? Once confirmed, it cannot be edited.",
+            yesText: "Confirm",
+            noText: "Cancel");
+
+        if (confirm ?? false)
+        {
+            await PurchaseOrderService.UpdateOrderStatus(order.Id, "Confirmed");
+            await LoadOrders();
+            Snackbar.Add("Order confirmed successfully", Severity.Success);
+        }
+    }
+
+    private async Task DeleteOrder(PurchaseOrder order)
+    {
+        var confirm = await DialogService.ShowMessageBox(
+            "Delete Order",
+            "Are you sure you want to delete this order?",
+            yesText: "Delete",
+            noText: "Cancel");
+
+        if (confirm ?? false)
+        {
+            await PurchaseOrderService.DeletePurchaseOrder(order.Id);
+            await LoadOrders();
+            Snackbar.Add("Order deleted successfully", Severity.Success);
+        }
+    }
+
+    private async Task ReceiveOrder(PurchaseOrder order)
+    {
+        var parameters = new DialogParameters
+        {
+            { "Order", order }
+        };
+
+        var dialog = await DialogService.ShowAsync<ReceiveOrderDialog>("Receive Order", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await LoadOrders();
+            Snackbar.Add("Order received successfully", Severity.Success);
+        }
+    }
+}
