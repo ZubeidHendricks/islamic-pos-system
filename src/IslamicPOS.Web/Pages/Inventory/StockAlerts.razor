@@ -1,0 +1,166 @@
+@page "/inventory/alerts"
+@using IslamicPOS.Core.Models
+@using IslamicPOS.Core.Services
+@attribute [Authorize(Roles = "Admin,Manager")]
+@inject IInventoryManager InventoryManager
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <MudPaper Class="pa-4">
+        <!-- Summary Cards and existing content... -->
+
+        <MudDataGrid T="StockAlert" 
+                     Items="@_alerts"
+                     Dense="true"
+                     Hover="true"
+                     Loading="_loading"
+                     FilterMode="DataGridFilterMode.Simple"
+                     FilterCaseSensitivity="DataGridFilterCaseSensitivity.CaseInsensitive">
+            <ToolBarContent>
+                <MudText Typo="Typo.h6">Stock Alerts</MudText>
+                <MudSpacer />
+                <MudButton Color="Color.Primary" 
+                          OnClick="CreatePurchaseOrder"
+                          DisableElevation="true"
+                          Variant="Variant.Filled"
+                          StartIcon="@Icons.Material.Filled.AddShoppingCart">
+                    Create Purchase Order
+                </MudButton>
+            </ToolBarContent>
+
+            <Columns>
+                <PropertyColumn Property="x => x.ProductName" Title="Product" Sortable="true" />
+                <PropertyColumn Property="x => x.Category" Title="Category" Sortable="true" />
+                <PropertyColumn Property="x => x.CurrentStock" Title="Current Stock" Sortable="true">
+                    <CellTemplate>
+                        <MudChip Color="@(GetStockLevelColor(context.Item))" Size="Size.Small">
+                            @context.Item.CurrentStock
+                        </MudChip>
+                    </CellTemplate>
+                </PropertyColumn>
+                <PropertyColumn Property="x => x.ReorderPoint" Title="Reorder Point" />
+                <PropertyColumn Property="x => x.AverageDailySales" Title="Avg. Daily Sales" />
+                <PropertyColumn Property="x => x.LastRestocked" Title="Last Restocked">
+                    <CellTemplate>
+                        @context.Item.LastRestocked.ToString("MMM dd, yyyy")
+                    </CellTemplate>
+                </PropertyColumn>
+                <PropertyColumn Property="x => x.IsOutOfStock" Title="Status">
+                    <CellTemplate>
+                        <MudChip Color="@(GetStatusColor(context.Item))" Size="Size.Small">
+                            @GetStatusText(context.Item)
+                        </MudChip>
+                    </CellTemplate>
+                </PropertyColumn>
+                <TemplateColumn Title="Actions" TextAlign="TextAlign.Right">
+                    <CellTemplate>
+                        <MudStack Row="true" Spacing="0" AlignItems="AlignItems.Center" Justify="Justify.FlexEnd">
+                            <MudTooltip Text="View History">
+                                <MudIconButton Size="@Size.Small" 
+                                             Icon="@Icons.Material.Filled.History"
+                                             OnClick="@(() => ViewStockHistory(context.Item))" />
+                            </MudTooltip>
+                            <MudTooltip Text="Adjust Stock">
+                                <MudIconButton Size="@Size.Small" 
+                                             Icon="@Icons.Material.Filled.Edit"
+                                             OnClick="@(() => AdjustStock(context.Item))" />
+                            </MudTooltip>
+                        </MudStack>
+                    </CellTemplate>
+                </TemplateColumn>
+            </Columns>
+
+            <PagerContent>
+                <MudDataGridPager T="StockAlert" />
+            </PagerContent>
+        </MudDataGrid>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private List<StockAlert> _alerts = new();
+    private decimal _inventoryValue;
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            _loading = true;
+            _alerts = await InventoryManager.GetLowStockAlerts();
+            _inventoryValue = await InventoryManager.GetInventoryValue();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private Color GetStockLevelColor(StockAlert alert) =>
+        alert.IsOutOfStock ? Color.Error :
+        alert.IsLowStock ? Color.Warning :
+        Color.Success;
+
+    private Color GetStatusColor(StockAlert alert) =>
+        alert.IsOutOfStock ? Color.Error :
+        alert.CurrentStock <= alert.ReorderPoint ? Color.Warning :
+        Color.Success;
+
+    private string GetStatusText(StockAlert alert) =>
+        alert.IsOutOfStock ? "Out of Stock" :
+        alert.CurrentStock <= alert.ReorderPoint ? "Reorder" :
+        "OK";
+
+    private async Task ViewStockHistory(StockAlert alert)
+    {
+        var parameters = new DialogParameters
+        {
+            { "ProductId", alert.ProductId },
+            { "ProductName", alert.ProductName }
+        };
+
+        var dialog = await DialogService.ShowAsync<StockHistoryDialog>("Stock History", parameters);
+        await dialog.Result;
+    }
+
+    private async Task AdjustStock(StockAlert alert)
+    {
+        var parameters = new DialogParameters
+        {
+            { "ProductId", alert.ProductId },
+            { "ProductName", alert.ProductName },
+            { "CurrentStock", alert.CurrentStock }
+        };
+
+        var dialog = await DialogService.ShowAsync<StockAdjustmentDialog>("Adjust Stock", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await LoadData();
+            Snackbar.Add("Stock adjusted successfully", Severity.Success);
+        }
+    }
+
+    private async Task CreatePurchaseOrder()
+    {
+        var parameters = new DialogParameters
+        {
+            { "LowStockItems", _alerts.Where(a => a.CurrentStock <= a.ReorderPoint).ToList() }
+        };
+
+        var dialog = await DialogService.ShowAsync<CreatePurchaseOrderDialog>("Create Purchase Order", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            Snackbar.Add("Purchase order created successfully", Severity.Success);
+        }
+    }
+}
