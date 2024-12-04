@@ -1,0 +1,122 @@
+@using IslamicPOS.Core.Models.InventoryManagement
+@using IslamicPOS.Core.Services
+@inject IPurchaseOrderService PurchaseOrderService
+
+<MudDialog>
+    <DialogContent>
+        <MudContainer Style="max-height: 500px; overflow-y: auto; padding: 0;">
+            <MudTable Items="@_orders" Dense="true" Hover="true" Loading="_loading">
+                <ToolBarContent>
+                    <MudText Typo="Typo.h6">@SupplierName Orders</MudText>
+                    <MudSpacer />
+                    <MudDateRangePicker @bind-DateRange="_dateRange"
+                                      Label="Date Range"
+                                      Variant="Variant.Outlined"
+                                      Style="width: 300px;"
+                                      PickerVariant="PickerVariant.Dialog"
+                                      OnClosed="FilterOrders" />
+                </ToolBarContent>
+
+                <HeaderContent>
+                    <MudTh>Order #</MudTh>
+                    <MudTh>Date</MudTh>
+                    <MudTh>Status</MudTh>
+                    <MudTh>Items</MudTh>
+                    <MudTh>Total</MudTh>
+                    <MudTh>Expected Delivery</MudTh>
+                    <MudTh></MudTh>
+                </HeaderContent>
+
+                <RowTemplate>
+                    <MudTd DataLabel="Order #">@context.OrderNumber</MudTd>
+                    <MudTd DataLabel="Date">@context.OrderDate.ToString("MMM dd, yyyy")</MudTd>
+                    <MudTd DataLabel="Status">
+                        <MudChip Color="@GetStatusColor(context.Status)" Size="Size.Small">
+                            @context.Status
+                        </MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="Items">@context.Items.Count</MudTd>
+                    <MudTd DataLabel="Total">@context.TotalAmount.ToString("C")</MudTd>
+                    <MudTd DataLabel="Expected Delivery">
+                        @(context.ExpectedDeliveryDate?.ToString("MMM dd, yyyy") ?? "-")
+                    </MudTd>
+                    <MudTd>
+                        <MudIconButton Icon="@Icons.Material.Filled.Visibility"
+                                     Size="Size.Small"
+                                     OnClick="() => ViewOrderDetails(context)" />
+                    </MudTd>
+                </RowTemplate>
+
+                <NoRecordsContent>
+                    <MudText>No orders found for this supplier.</MudText>
+                </NoRecordsContent>
+
+                <PagerContent>
+                    <MudTablePager />
+                </PagerContent>
+            </MudTable>
+        </MudContainer>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Close">Close</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public int SupplierId { get; set; }
+    [Parameter] public string SupplierName { get; set; } = null!;
+
+    private List<PurchaseOrder> _orders = new();
+    private bool _loading = true;
+    private DateRange _dateRange = new(DateTime.Now.AddMonths(-3), DateTime.Now);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadOrders();
+    }
+
+    private async Task LoadOrders()
+    {
+        try
+        {
+            _loading = true;
+            _orders = await PurchaseOrderService.GetPurchaseOrders(_dateRange.Start, _dateRange.End);
+            _orders = _orders.Where(o => o.SupplierId == SupplierId).ToList();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private Color GetStatusColor(string status) => status switch
+    {
+        "Draft" => Color.Info,
+        "Confirmed" => Color.Warning,
+        "Received" => Color.Success,
+        "Cancelled" => Color.Error,
+        _ => Color.Default
+    };
+
+    private async Task FilterOrders()
+    {
+        if (_dateRange.Start.HasValue && _dateRange.End.HasValue)
+        {
+            await LoadOrders();
+        }
+    }
+
+    private async Task ViewOrderDetails(PurchaseOrder order)
+    {
+        var parameters = new DialogParameters
+        {
+            { "Order", order }
+        };
+
+        var dialog = DialogService.Show<PurchaseOrderDetailsDialog>("Order Details", parameters);
+        await dialog.Result;
+    }
+
+    private void Close() => MudDialog.Close();
+}
