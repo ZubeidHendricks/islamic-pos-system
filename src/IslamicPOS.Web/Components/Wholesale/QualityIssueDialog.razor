@@ -1,0 +1,148 @@
+@using IslamicPOS.Core.Models.Wholesale
+@inject IQualityControlService QualityService
+
+<MudDialog>
+    <DialogContent>
+        <MudContainer Style="max-height: 500px; overflow-y: auto; padding: 0;">
+            <MudGrid>
+                <!-- Issue Details -->
+                <MudItem xs="12">
+                    <MudAlert Severity="@GetIssueSeverity(Issue.Type)" Variant="Variant.Outlined">
+                        @Issue.Description
+                    </MudAlert>
+                </MudItem>
+
+                <MudItem xs="12">
+                    <MudText><strong>Order:</strong> @Issue.OrderNumber</MudText>
+                    <MudText><strong>Product:</strong> @Issue.ProductName</MudText>
+                    <MudText><strong>Batch:</strong> @Issue.BatchNumber</MudText>
+                    <MudText><strong>Reported:</strong> @Issue.ReportedAt.ToString("MMM dd, yyyy HH:mm")</MudText>
+                </MudItem>
+
+                <!-- Quality Control Results -->
+                <MudItem xs="12">
+                    <MudExpansionPanel>
+                        <TitleContent>
+                            <MudText>Quality Control Results</MudText>
+                        </TitleContent>
+                        <ChildContent>
+                            <MudList Dense="true">
+                                @foreach (var check in Issue.QualityChecks)
+                                {
+                                    <MudListItem>
+                                        <div class="d-flex justify-space-between align-center">
+                                            <div>
+                                                <MudText>@check.Name</MudText>
+                                                @if (!string.IsNullOrEmpty(check.Notes))
+                                                {
+                                                    <MudText Typo="Typo.caption">@check.Notes</MudText>
+                                                }
+                                            </div>
+                                            <MudChip Color="@(check.IsPassed ? Color.Success : Color.Error)" Size="Size.Small">
+                                                @(check.IsPassed ? "Passed" : "Failed")
+                                            </MudChip>
+                                        </div>
+                                    </MudListItem>
+                                }
+                            </MudList>
+                        </ChildContent>
+                    </MudExpansionPanel>
+                </MudItem>
+
+                <!-- Action Form -->
+                <MudItem xs="12">
+                    <MudForm @ref="_form" @bind-IsValid="@_isValid">
+                        <MudSelect T="string" @bind-Value="_resolution.Action"
+                                  Label="Action"
+                                  Required="true"
+                                  RequiredError="Action is required">
+                            <MudSelectItem Value="@("Reject")">Reject Batch</MudSelectItem>
+                            <MudSelectItem Value="@("ReinspectBatch")">Request Reinspection</MudSelectItem>
+                            <MudSelectItem Value="@("ApproveWithWarning")">Approve with Warning</MudSelectItem>
+                            <MudSelectItem Value="@("EscalateToManager")">Escalate to Manager</MudSelectItem>
+                        </MudSelect>
+
+                        <MudTextField @bind-Value="_resolution.Notes"
+                                    Label="Resolution Notes"
+                                    Required="true"
+                                    RequiredError="Notes are required"
+                                    Lines="3"
+                                    Class="mt-4" />
+
+                        @if (_resolution.Action == "ReinspectBatch")
+                        {
+                            <MudNumericField @bind-Value="_resolution.ReinspectionSampleSize"
+                                           Label="Reinspection Sample Size"
+                                           Required="true"
+                                           Min="1"
+                                           Class="mt-4" />
+                        }
+                    </MudForm>
+                </MudItem>
+            </MudGrid>
+        </MudContainer>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit" Disabled="!_isValid || _processing">
+            @if (_processing)
+            {
+                <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                <MudText Class="ms-2">Processing</MudText>
+            }
+            else
+            {
+                <MudText>Submit Resolution</MudText>
+            }
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public QualityIssue Issue { get; set; } = null!;
+
+    private MudForm _form = null!;
+    private bool _isValid;
+    private bool _processing;
+    private QualityResolution _resolution = new();
+
+    private Severity GetIssueSeverity(string type) => type switch
+    {
+        "Critical" => Severity.Error,
+        "Major" => Severity.Warning,
+        "Minor" => Severity.Info,
+        _ => Severity.Normal
+    };
+
+    private async Task Submit()
+    {
+        if (!_isValid) return;
+
+        try
+        {
+            _processing = true;
+
+            // Submit resolution
+            await QualityService.ResolveQualityIssue(Issue.Id, _resolution);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error resolving issue: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _processing = false;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}
+
+public class QualityResolution
+{
+    public string Action { get; set; } = string.Empty;
+    public string Notes { get; set; } = string.Empty;
+    public int? ReinspectionSampleSize { get; set; }
+}
