@@ -1,0 +1,114 @@
+@page "/profit-sharing"
+@using IslamicPOS.Core.Services
+@inject IProfitSharingService ProfitSharingService
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudGrid>
+        <!-- Profit Overview -->
+        <MudItem xs="12">
+            <MudCard>
+                <MudCardHeader>
+                    <MudText Typo="Typo.h4">Profit Overview</MudText>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudGrid>
+                        <MudItem xs="12" md="4">
+                            <MudPaper Class="pa-4" Elevation="0">
+                                <MudText Typo="Typo.subtitle1">Total Profit</MudText>
+                                <MudText Typo="Typo.h4">@_totalProfit.ToString("C")</MudText>
+                            </MudPaper>
+                        </MudItem>
+                        <MudItem xs="12" md="4">
+                            <MudPaper Class="pa-4" Elevation="0">
+                                <MudText Typo="Typo.subtitle1">Period</MudText>
+                                <MudText Typo="Typo.h6">@_startDate.ToString("MMM dd") - @_endDate.ToString("MMM dd, yyyy")</MudText>
+                            </MudPaper>
+                        </MudItem>
+                        <MudItem xs="12" md="4">
+                            <MudDateRangePicker @bind-DateRange="_dateRange" 
+                                              Label="Select Period" 
+                                              PickerVariant="PickerVariant.Dialog" />
+                        </MudItem>
+                    </MudGrid>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <!-- Profit Distribution -->
+        <MudItem xs="12" md="8">
+            <MudCard>
+                <MudCardHeader>
+                    <MudText Typo="Typo.h5">Profit Distribution</MudText>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudTable Items="_profitShares" Dense="true" Hover="true">
+                        <HeaderContent>
+                            <MudTh>Shareholder</MudTh>
+                            <MudTh>Percentage</MudTh>
+                            <MudTh>Amount</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd>@context.Key</MudTd>
+                            <MudTd>@(_shareholderPercentages[context.Key])%</MudTd>
+                            <MudTd>@context.Value.ToString("C")</MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <!-- Distribution Settings -->
+        <MudItem xs="12" md="4">
+            <MudCard>
+                <MudCardHeader>
+                    <MudText Typo="Typo.h5">Distribution Settings</MudText>
+                </MudCardHeader>
+                <MudCardContent>
+                    @foreach (var shareholder in _shareholderPercentages.Keys)
+                    {
+                        <MudTextField @bind-Value="_shareholderPercentages[shareholder]"
+                                    Label="@shareholder Percentage"
+                                    Variant="Variant.Outlined"
+                                    Adornment="Adornment.End"
+                                    AdornmentText="%"
+                                    Class="mb-4" />
+                    }
+                    <MudButton Variant="Variant.Filled"
+                              Color="Color.Primary"
+                              OnClick="RecalculateShares"
+                              FullWidth="true">Update Distribution</MudButton>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+</MudContainer>
+
+@code {
+    private DateRange _dateRange = new(DateTime.Now.AddMonths(-1), DateTime.Now);
+    private DateTime _startDate => _dateRange.Start!.Value;
+    private DateTime _endDate => _dateRange.End!.Value;
+    private decimal _totalProfit;
+    private Dictionary<string, decimal> _shareholderPercentages = new()
+    {
+        { "Owner", 60 },
+        { "Partners", 30 },
+        { "Charity Fund", 10 }
+    };
+    private Dictionary<string, decimal> _profitShares = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadProfitData();
+    }
+
+    private async Task LoadProfitData()
+    {
+        _totalProfit = await ProfitSharingService.CalculateProfit(_startDate, _endDate);
+        await RecalculateShares();
+    }
+
+    private async Task RecalculateShares()
+    {
+        _profitShares = await ProfitSharingService.CalculateShares(_totalProfit, _shareholderPercentages);
+    }
+}
