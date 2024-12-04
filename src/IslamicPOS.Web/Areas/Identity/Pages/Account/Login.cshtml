@@ -1,0 +1,43 @@
+@page
+@model LoginModel
+@{
+    ViewData["Title"] = "Log in";
+}
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-4">
+    <MudText Typo="Typo.h4" Class="mb-4">@ViewData["Title"]</MudText>
+
+    <MudCard>
+        <MudForm Model="@Model" OnValidSubmit="Model.OnPostAsync">
+            <MudCardContent>
+                <MudTextField T="string"
+                            Label="Email"
+                            @bind-Value="Model.Input.Email"
+                            Required="true"
+                            RequiredError="Email is required"
+                            Class="mb-3" />
+
+                <MudTextField T="string"
+                            Label="Password"
+                            @bind-Value="Model.Input.Password"
+                            Required="true"
+                            RequiredError="Password is required"
+                            InputType="InputType.Password"
+                            Class="mb-3" />
+
+                <MudCheckBox T="bool"
+                           Label="Remember me?"
+                           @bind-Checked="Model.Input.RememberMe"
+                           Class="mb-3" />
+            </MudCardContent>
+
+            <MudCardActions>
+                <MudButton ButtonType="ButtonType.Submit"
+                          Variant="Variant.Filled"
+                          Color="Color.Primary"
+                          Size="Size.Large"
+                          FullWidth="true">Log in</MudButton>
+            </MudCardActions>
+        </MudForm>
+    </MudCard>
+</MudContainer>
