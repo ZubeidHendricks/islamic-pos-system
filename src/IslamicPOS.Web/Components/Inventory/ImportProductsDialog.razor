@@ -1,0 +1,130 @@
+@using IslamicPOS.Core.Models
+@using System.Text
+@inject IProductService ProductService
+@inject ISnackbar Snackbar
+
+<MudDialog DisableSidePadding="true">
+    <DialogContent>
+        <MudContainer Style="max-height: 500px; overflow-y: auto;">
+            <MudGrid>
+                <MudItem xs="12">
+                    <MudText>Upload a CSV file with the following columns:</MudText>
+                    <MudText Class="mt-2">
+                        Name, Description, Barcode, Price, StockQuantity, Category, IsZakaatable
+                    </MudText>
+                </MudItem>
+
+                <MudItem xs="12">
+                    <InputFile OnChange="OnFileSelected"
+                              class="mud-button-root mud-button mud-button-outlined mud-button-outlined-primary mud-button-filled-size-medium">
+                        <MudText>Choose File</MudText>
+                    </InputFile>
+                </MudItem>
+
+                @if (_fileName != null)
+                {
+                    <MudItem xs="12">
+                        <MudChip Color="Color.Primary" Class="mt-4">@_fileName</MudChip>
+                    </MudItem>
+                }
+
+                @if (_previewData?.Any() == true)
+                {
+                    <MudItem xs="12">
+                        <MudText Typo="Typo.h6" Class="mt-4">Preview</MudText>
+                        <MudTable Items="_previewData" Dense="true" Hover="true" MaxHeight="300px">
+                            <HeaderContent>
+                                <MudTh>Name</MudTh>
+                                <MudTh>Barcode</MudTh>
+                                <MudTh>Price</MudTh>
+                                <MudTh>Stock</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd DataLabel="Name">@context.Name</MudTd>
+                                <MudTd DataLabel="Barcode">@context.Barcode</MudTd>
+                                <MudTd DataLabel="Price">@context.Price.ToString("C")</MudTd>
+                                <MudTd DataLabel="Stock">@context.StockQuantity</MudTd>
+                            </RowTemplate>
+                        </MudTable>
+                    </MudItem>
+                }
+            </MudGrid>
+        </MudContainer>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" 
+                  OnClick="ImportProducts"
+                  Disabled="_products?.Any() != true">Import</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+
+    private List<Product>? _products;
+    private List<Product>? _previewData;
+    private string? _fileName;
+
+    private async Task OnFileSelected(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            _fileName = e.File.Name;
+            var content = await new StreamReader(e.File.OpenReadStream()).ReadToEndAsync();
+            _products = ParseCsv(content);
+            _previewData = _products.Take(5).ToList();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Error reading file: " + ex.Message, Severity.Error);
+        }
+    }
+
+    private List<Product> ParseCsv(string content)
+    {
+        var products = new List<Product>();
+        var lines = content.Split('\n');
+
+        // Skip header
+        for (int i = 1; i < lines.Length; i++)
+        {
+            var line = lines[i].Trim();
+            if (string.IsNullOrEmpty(line)) continue;
+
+            var values = line.Split(',');
+            if (values.Length < 7) continue;
+
+            products.Add(new Product
+            {
+                Name = values[0].Trim('"'),
+                Description = values[1].Trim('"'),
+                Barcode = values[2].Trim('"'),
+                Price = decimal.Parse(values[3]),
+                StockQuantity = int.Parse(values[4]),
+                Category = values[5].Trim('"'),
+                IsZakaatable = bool.Parse(values[6])
+            });
+        }
+
+        return products;
+    }
+
+    private async Task ImportProducts()
+    {
+        try
+        {
+            if (_products?.Any() == true)
+            {
+                await ProductService.ImportProducts(_products);
+                MudDialog.Close(DialogResult.Ok(true));
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Error importing products: " + ex.Message, Severity.Error);
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}
