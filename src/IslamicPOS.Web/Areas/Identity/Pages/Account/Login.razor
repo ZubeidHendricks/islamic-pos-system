@@ -1,0 +1,126 @@
+@page "/login"
+@using Microsoft.AspNetCore.Identity
+@using IslamicPOS.Core.Models
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-16">
+    <MudCard>
+        <MudCardHeader>
+            <CardHeaderContent>
+                <MudText Typo="Typo.h5">Islamic POS System</MudText>
+                <MudText Typo="Typo.body2">Sign in to your account</MudText>
+            </CardHeaderContent>
+        </MudCardHeader>
+        <MudCardContent>
+            <MudForm @ref="_form" @bind-IsValid="@_isValid">
+                <MudTextField T="string"
+                            @bind-Value="_model.Email"
+                            Label="Email"
+                            Required="true"
+                            RequiredError="Email is required"
+                            Validation="@(new EmailAddressAttribute() { ErrorMessage = "Invalid email address" })"
+                            InputType="InputType.Email" />
+
+                <MudTextField T="string"
+                            @bind-Value="_model.Password"
+                            Label="Password"
+                            Required="true"
+                            RequiredError="Password is required"
+                            InputType="InputType.Password"
+                            Class="mt-3" />
+
+                <MudCheckBox @bind-Checked="_model.RememberMe"
+                           Label="Remember me"
+                           Color="Color.Primary"
+                           Class="mt-3" />
+            </MudForm>
+
+            @if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <MudAlert Severity="Severity.Error" Class="mt-3">@_errorMessage</MudAlert>
+            }
+        </MudCardContent>
+        <MudCardActions>
+            <MudButton Variant="Variant.Filled"
+                      Color="Color.Primary"
+                      Size="Size.Large"
+                      FullWidth="true"
+                      OnClick="HandleLogin"
+                      Disabled="!_isValid || _processing">
+                @if (_processing)
+                {
+                    <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                    <MudText Class="ms-2">Processing</MudText>
+                }
+                else
+                {
+                    <MudText>Sign In</MudText>
+                }
+            </MudButton>
+        </MudCardActions>
+        <MudCardContent Class="d-flex justify-center">
+            <MudLink Href="/forgot-password">Forgot your password?</MudLink>
+        </MudCardContent>
+    </MudCard>
+</MudContainer>
+
+@code {
+    private MudForm _form;
+    private bool _isValid;
+    private bool _processing;
+    private string _errorMessage;
+    private LoginModel _model = new();
+
+    private async Task HandleLogin()
+    {
+        await _form.Validate();
+        if (!_isValid) return;
+
+        try
+        {
+            _processing = true;
+            _errorMessage = string.Empty;
+
+            var result = await SignInManager.PasswordSignInAsync(
+                _model.Email,
+                _model.Password,
+                _model.RememberMe,
+                lockoutOnFailure: true);
+
+            if (result.Succeeded)
+            {
+                NavigationManager.NavigateTo("/");
+            }
+            else if (result.IsLockedOut)
+            {
+                _errorMessage = "Account is locked out. Please try again later.";
+            }
+            else if (result.RequiresTwoFactor)
+            {
+                NavigationManager.NavigateTo("/login-2fa");
+            }
+            else
+            {
+                _errorMessage = "Invalid login attempt.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = "An error occurred while signing in.";
+        }
+        finally
+        {
+            _processing = false;
+        }
+    }
+
+    private class LoginModel
+    {
+        public string Email { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+        public bool RememberMe { get; set; }
+    }
+}
