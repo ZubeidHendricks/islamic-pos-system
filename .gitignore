@@ -1,22 +1,20 @@
-# .NET Core build output
+## .NET Core build output
 bin/
 obj/
 
-# Visual Studio files
+## Visual Studio files
 .vs/
 *.user
 *.userosscache
 *.sln.docstates
 
-# Build results
+## Build results
 [Dd]ebug/
 [Rr]elease/
-[Bb]in/
-[Oo]bj/
 
-# NuGet Packages
+## NuGet Packages
 *.nupkg
 packages/
 
-# Visual Studio Code
+## Visual Studio Code
 .vscode/
