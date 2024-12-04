@@ -1,0 +1,227 @@
+@using IslamicPOS.Core.Models.Wholesale
+@inject IQualityControlService QualityService
+
+<MudDialog>
+    <DialogContent>
+        <MudContainer Style="max-height: 500px; overflow-y: auto; padding: 0;">
+            <MudForm @ref="_form" @bind-IsValid="@_isValid">
+                <MudGrid>
+                    <MudItem xs="12">
+                        <MudAlert Severity="Severity.Info" Class="mb-4">
+                            Update Halal certification details for @Product.Name
+                        </MudAlert>
+                    </MudItem>
+
+                    <!-- Certification Status -->
+                    <MudItem xs="12">
+                        <MudCheckBox @bind-Checked="_certification.IsHalal"
+                                   Label="This product is Halal certified"
+                                   Color="Color.Primary" />
+                    </MudItem>
+
+                    @if (_certification.IsHalal)
+                    {
+                        <!-- Certification Details -->
+                        <MudItem xs="12" md="6">
+                            <MudTextField @bind-Value="_certification.CertificateNumber"
+                                        Label="Certificate Number"
+                                        Required="true"
+                                        RequiredError="Certificate number is required" />
+                        </MudItem>
+
+                        <MudItem xs="12" md="6">
+                            <MudTextField @bind-Value="_certification.IssuingBody"
+                                        Label="Certifying Authority"
+                                        Required="true"
+                                        RequiredError="Certifying authority is required" />
+                        </MudItem>
+
+                        <MudItem xs="12" md="6">
+                            <MudDatePicker @bind-Date="_certification.IssueDate"
+                                         Label="Issue Date"
+                                         Required="true"
+                                         RequiredError="Issue date is required" />
+                        </MudItem>
+
+                        <MudItem xs="12" md="6">
+                            <MudDatePicker @bind-Date="_certification.ExpiryDate"
+                                         Label="Expiry Date"
+                                         Required="true"
+                                         RequiredError="Expiry date is required"
+                                         DisablePastDates="true" />
+                        </MudItem>
+
+                        <!-- Processing Information -->
+                        <MudItem xs="12">
+                            <MudExpansionPanel>
+                                <TitleContent>
+                                    <MudText>Processing Details</MudText>
+                                </TitleContent>
+                                <ChildContent>
+                                    <MudGrid>
+                                        <MudItem xs="12">
+                                            <MudTextField @bind-Value="_certification.ProcessingMethod"
+                                                        Label="Processing Method"
+                                                        Required="true"
+                                                        RequiredError="Processing method is required" />
+                                        </MudItem>
+
+                                        <MudItem xs="12">
+                                            <MudTextField @bind-Value="_certification.StorageRequirements"
+                                                        Label="Storage Requirements"
+                                                        Required="true"
+                                                        RequiredError="Storage requirements are required" />
+                                        </MudItem>
+                                    </MudGrid>
+                                </ChildContent>
+                            </MudExpansionPanel>
+                        </MudItem>
+
+                        <!-- Ingredients -->
+                        <MudItem xs="12">
+                            <MudExpansionPanel>
+                                <TitleContent>
+                                    <MudText>Ingredients</MudText>
+                                </TitleContent>
+                                <ChildContent>
+                                    <MudGrid>
+                                        <MudItem xs="12">
+                                            <MudTextField @bind-Value="_newIngredient"
+                                                        Label="Add Ingredient"
+                                                        Adornment="Adornment.End"
+                                                        AdornmentIcon="@Icons.Material.Filled.Add"
+                                                        OnAdornmentClick="AddIngredient"
+                                                        OnKeyDown="HandleIngredientKeyPress" />
+                                        </MudItem>
+
+                                        <MudItem xs="12">
+                                            <MudList Clickable="true">
+                                                @foreach (var ingredient in _certification.Ingredients)
+                                                {
+                                                    <MudListItem>
+                                                        <div class="d-flex justify-space-between align-center">
+                                                            <MudText>@ingredient</MudText>
+                                                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                                         Size="Size.Small"
+                                                                         OnClick="() => RemoveIngredient(ingredient)" />
+                                                        </div>
+                                                    </MudListItem>
+                                                }
+                                            </MudList>
+                                        </MudItem>
+                                    </MudGrid>
+                                </ChildContent>
+                            </MudExpansionPanel>
+                        </MudItem>
+
+                        <!-- Cross Contamination Check -->
+                        <MudItem xs="12">
+                            <MudCheckBox @bind-Checked="_certification.CrossContaminationChecked"
+                                       Label="Cross-contamination prevention measures are in place"
+                                       Required="true"
+                                       RequiredError="Cross-contamination check is required"
+                                       Color="Color.Primary" />
+                        </MudItem>
+
+                        <MudItem xs="12">
+                            <MudTextField @bind-Value="_certification.VerificationNotes"
+                                        Label="Additional Notes"
+                                        Lines="3" />
+                        </MudItem>
+                    }
+                </MudGrid>
+            </MudForm>
+        </MudContainer>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit" Disabled="!_isValid || _processing">
+            @if (_processing)
+            {
+                <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                <MudText Class="ms-2">Processing</MudText>
+            }
+            else
+            {
+                <MudText>Update Certification</MudText>
+            }
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public VendorProduct Product { get; set; } = null!;
+
+    private MudForm _form = null!;
+    private bool _isValid;
+    private bool _processing;
+    private HalalCompliance _certification = new();
+    private string _newIngredient = "";
+
+    protected override void OnInitialized()
+    {
+        // Initialize with existing certification if available
+        if (!string.IsNullOrEmpty(Product.HalalCertification))
+        {
+            _certification.IsHalal = true;
+            _certification.CertificateNumber = Product.HalalCertification;
+        }
+    }
+
+    private void AddIngredient()
+    {
+        if (!string.IsNullOrWhiteSpace(_newIngredient))
+        {
+            _certification.Ingredients.Add(_newIngredient.Trim());
+            _newIngredient = "";
+        }
+    }
+
+    private void RemoveIngredient(string ingredient)
+    {
+        _certification.Ingredients.Remove(ingredient);
+    }
+
+    private void HandleIngredientKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            AddIngredient();
+        }
+    }
+
+    private async Task Submit()
+    {
+        if (!_isValid) return;
+
+        try
+        {
+            _processing = true;
+
+            // Verify certification
+            bool isValid = await QualityService.ValidateHalalCompliance(Product.Id, _certification.CertificateNumber);
+            if (!isValid)
+            {
+                Snackbar.Add("Invalid Halal certification", Severity.Error);
+                return;
+            }
+
+            // Update product certification
+            Product.IsHalal = _certification.IsHalal;
+            Product.HalalCertification = _certification.CertificateNumber;
+
+            MudDialog.Close(DialogResult.Ok(Product));
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error updating certification: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _processing = false;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}
