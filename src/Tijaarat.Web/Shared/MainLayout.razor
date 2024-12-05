@@ -1,0 +1,99 @@
+@inherits LayoutComponentBase
+@inject NavigationManager NavigationManager
+
+<MudThemeProvider @ref="@_mudThemeProvider" @bind-IsDarkMode="@_isDarkMode" Theme="@_theme" />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    @if (!IsLandingPage)
+    {
+        <MudAppBar>
+            <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
+            <MudText Typo="Typo.h6">Tijaarat</MudText>
+            <MudSpacer />
+            <MudIconButton Icon="@Icons.Material.Filled.Brightness4" Color="Color.Inherit" OnClick="@((e) => ToggleDarkMode())" />
+            <AuthorizeView>
+                <Authorized>
+                    <MudMenu>
+                        <ActivatorContent>
+                            <MudAvatar Color="Color.Secondary">@context.User.Identity.Name?[0]</MudAvatar>
+                        </ActivatorContent>
+                        <ChildContent>
+                            <MudMenuItem Href="/profile">Profile</MudMenuItem>
+                            <MudMenuItem Href="/settings">Settings</MudMenuItem>
+                            <MudDivider />
+                            <form method="post" action="Identity/Account/Logout">
+                                <MudMenuItem OnClick="@(() => LogoutClick())">Logout</MudMenuItem>
+                            </form>
+                        </ChildContent>
+                    </MudMenu>
+                </Authorized>
+                <NotAuthorized>
+                    <MudButton Href="Identity/Account/Login" Variant="Variant.Text" Color="Color.Inherit">Login</MudButton>
+                    <MudButton Href="Identity/Account/Register" Variant="Variant.Outlined" Color="Color.Inherit">Register</MudButton>
+                </NotAuthorized>
+            </AuthorizeView>
+        </MudAppBar>
+        <MudDrawer @bind-Open="@_drawerOpen">
+            <NavMenu />
+        </MudDrawer>
+    }
+
+    <MudMainContent>
+        @Body
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    private bool _drawerOpen = true;
+    private bool _isDarkMode;
+    private MudThemeProvider _mudThemeProvider;
+    private MudTheme _theme = new()
+    {
+        Palette = new PaletteLight()
+        {
+            Primary = "#26734d",
+            Secondary = "#1a4731",
+            AppbarBackground = "#ffffff",
+        },
+        PaletteDark = new PaletteDark()
+        {
+            Primary = "#26734d",
+            Secondary = "#1a4731",
+        },
+        Typography = new Typography()
+        {
+            Default = new Default()
+            {
+                FontFamily = new[] { "Lato", "sans-serif" }
+            }
+        }
+    };
+
+    private bool IsLandingPage => NavigationManager.Uri.EndsWith("/");
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _isDarkMode = await _mudThemeProvider.GetSystemPreference();
+            StateHasChanged();
+        }
+    }
+
+    private void DrawerToggle()
+    {
+        _drawerOpen = !_drawerOpen;
+    }
+
+    private void ToggleDarkMode()
+    {
+        _isDarkMode = !_isDarkMode;
+    }
+
+    private void LogoutClick()
+    {
+        NavigationManager.NavigateTo("Identity/Account/Logout", true);
+    }
+}

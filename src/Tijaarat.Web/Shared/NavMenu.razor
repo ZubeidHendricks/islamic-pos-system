@@ -1,0 +1,42 @@
+@using MudBlazor
+
+<MudNavMenu>
+    <MudNavLink Href="" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard">Dashboard</MudNavLink>
+    
+    <MudNavGroup Title="Sales" Icon="@Icons.Material.Filled.ShoppingCart" Expanded="true">
+        <MudNavLink Href="/pos" Match="NavLinkMatch.Prefix">Point of Sale</MudNavLink>
+        <MudNavLink Href="/sales/history">Sales History</MudNavLink>
+        <MudNavLink Href="/sales/refunds">Refunds</MudNavLink>
+    </MudNavGroup>
+
+    <MudNavGroup Title="Inventory" Icon="@Icons.Material.Filled.Inventory2" Expanded="true">
+        <MudNavLink Href="/inventory/products">Products</MudNavLink>
+        <MudNavLink Href="/inventory/categories">Categories</MudNavLink>
+        <MudNavLink Href="/inventory/stock">Stock Management</MudNavLink>
+    </MudNavGroup>
+
+    <MudNavGroup Title="Islamic Finance" Icon="@Icons.Material.Filled.AttachMoney" Expanded="true">
+        <MudNavLink Href="/finance/zakaah">Zakaah Calculator</MudNavLink>
+        <MudNavLink Href="/finance/profit-sharing">Profit Sharing</MudNavLink>
+        <MudNavLink Href="/finance/reports">Financial Reports</MudNavLink>
+    </MudNavGroup>
+
+    <MudNavGroup Title="Customers" Icon="@Icons.Material.Filled.People" Expanded="true">
+        <MudNavLink Href="/customers/list">Customer List</MudNavLink>
+        <MudNavLink Href="/customers/loyalty">Loyalty Program</MudNavLink>
+    </MudNavGroup>
+
+    <MudNavGroup Title="Reports" Icon="@Icons.Material.Filled.Assessment" Expanded="true">
+        <MudNavLink Href="/reports/sales">Sales Reports</MudNavLink>
+        <MudNavLink Href="/reports/inventory">Inventory Reports</MudNavLink>
+        <MudNavLink Href="/reports/financial">Financial Reports</MudNavLink>
+    </MudNavGroup>
+
+    <AuthorizeView Roles="Admin">
+        <MudNavGroup Title="Administration" Icon="@Icons.Material.Filled.AdminPanelSettings" Expanded="true">
+            <MudNavLink Href="/admin/users">User Management</MudNavLink>
+            <MudNavLink Href="/admin/roles">Role Management</MudNavLink>
+            <MudNavLink Href="/admin/settings">System Settings</MudNavLink>
+        </MudNavGroup>
+    </AuthorizeView>
+</MudNavMenu>
