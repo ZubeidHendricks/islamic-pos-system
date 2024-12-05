@@ -1,0 +1,103 @@
+@using MudBlazor
+@inject ISnackbar Snackbar
+@inject HttpClient Http
+
+<MudPaper Class="pa-6" Elevation="0">
+    <EditForm Model="@model" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+
+        <MudGrid>
+            <MudItem xs="12" md="6">
+                <MudTextField @bind-Value="model.Name" Label="Name" Required="true" />
+                <ValidationMessage For="@(() => model.Name)" />
+            </MudItem>
+
+            <MudItem xs="12" md="6">
+                <MudTextField @bind-Value="model.Email" Label="Email" Required="true" />
+                <ValidationMessage For="@(() => model.Email)" />
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudSelect @bind-Value="model.BusinessType" Label="Business Type" Required="true">
+                    <MudSelectItem Value="@("Retail Store")">Retail Store</MudSelectItem>
+                    <MudSelectItem Value="@("Restaurant")">Restaurant</MudSelectItem>
+                    <MudSelectItem Value="@("Wholesale Business")">Wholesale Business</MudSelectItem>
+                    <MudSelectItem Value="@("Service Provider")">Service Provider</MudSelectItem>
+                    <MudSelectItem Value="@("Other")">Other</MudSelectItem>
+                </MudSelect>
+                <ValidationMessage For="@(() => model.BusinessType)" />
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudTextField @bind-Value="model.Message" Label="Message" 
+                             Required="true" Lines="4" />
+                <ValidationMessage For="@(() => model.Message)" />
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" 
+                          Color="Color.Primary" Size="Size.Large" FullWidth="true"
+                          Disabled="@_processing">
+                    @if (_processing)
+                    {
+                        <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                        <MudText Class="ms-2">Sending...</MudText>
+                    }
+                    else
+                    {
+                        <MudText>Send Message</MudText>
+                    }
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+    </EditForm>
+</MudPaper>
+
+@code {
+    private ContactFormModel model = new();
+    private bool _processing;
+
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            _processing = true;
+            var response = await Http.PostAsJsonAsync("api/contact", model);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                Snackbar.Add("Thank you for your message. We'll get back to you soon!", Severity.Success);
+                model = new ContactFormModel();
+            }
+            else
+            {
+                Snackbar.Add("There was an error sending your message. Please try again.", Severity.Error);
+            }
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("There was an error sending your message. Please try again.", Severity.Error);
+        }
+        finally
+        {
+            _processing = false;
+        }
+    }
+
+    public class ContactFormModel
+    {
+        [Required]
+        public string Name { get; set; }
+
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; }
+
+        [Required]
+        public string BusinessType { get; set; }
+
+        [Required]
+        [MinLength(10)]
+        public string Message { get; set; }
+    }
+}
