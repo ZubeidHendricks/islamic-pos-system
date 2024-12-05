@@ -1,0 +1,14 @@
+{
+    "navigationFallback": {
+        "rewrite": "/index.html",
+        "exclude": ["/images/*", "/*.{css,js,ico,jpg,png}", "/api/*"]
+    },
+    "globalHeaders": {
+        "content-security-policy": "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: *.tijaarat.com; img-src 'self' data: https:; upgrade-insecure-requests",
+        "X-Frame-Options": "DENY",
+        "X-Content-Type-Options": "nosniff"
+    },
+    "mimeTypes": {
+        ".json": "text/json"
+    }
+}
