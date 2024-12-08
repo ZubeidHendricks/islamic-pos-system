@@ -8,36 +8,22 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
 {
     public void Configure(EntityTypeBuilder<Product> builder)
     {
-        builder.HasKey(p => p.Id);
+        builder.HasKey(e => e.Id);
 
-        builder.Property(p => p.Name)
+        builder.Property(e => e.Name)
             .IsRequired()
-            .HasMaxLength(200);
-
-        builder.Property(p => p.Description)
-            .HasMaxLength(1000);
-
-        builder.Property(p => p.Barcode)
-            .HasMaxLength(50);
-
-        builder.Property(p => p.Price)
-            .HasColumnType("decimal(18,2)")
-            .IsRequired();
-
-        builder.Property(p => p.Category)
             .HasMaxLength(100);
 
-        builder.Property(p => p.CreatedAt)
-            .IsRequired()
-            .HasDefaultValueSql("GETUTCDATE()");
+        builder.Property(e => e.Description)
+            .HasMaxLength(500);
 
-        builder.HasIndex(p => p.Barcode)
-            .IsUnique()
-            .HasFilter("[Barcode] IS NOT NULL");
+        builder.Property(e => e.Price)
+            .HasPrecision(18, 2);
 
-        builder.HasMany(p => p.StockMovements)
-            .WithOne(sm => sm.Product)
-            .HasForeignKey(sm => sm.ProductId)
-            .OnDelete(DeleteBehavior.Cascade);
+        builder.Property(e => e.Barcode)
+            .HasMaxLength(50);
+
+        builder.HasIndex(e => e.Barcode)
+            .IsUnique();
     }
 }

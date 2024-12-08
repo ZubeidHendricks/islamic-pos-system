@@ -1,0 +1,68 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "profileName": {
+            "type": "string",
+            "defaultValue": "islamic-pos-cdn"
+        },
+        "endpointName": {
+            "type": "string",
+            "defaultValue": "islamic-pos-endpoint"
+        },
+        "originUrl": {
+            "type": "string",
+            "metadata": {
+                "description": "URL of the origin web app"
+            }
+        }
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Cdn/profiles",
+            "apiVersion": "2020-09-01",
+            "name": "[parameters('profileName')]",
+            "location": "global",
+            "sku": {
+                "name": "Standard_Microsoft"
+            },
+            "properties": {}
+        },
+        {
+            "type": "Microsoft.Cdn/profiles/endpoints",
+            "apiVersion": "2020-09-01",
+            "name": "[concat(parameters('profileName'), '/', parameters('endpointName'))]",
+            "location": "global",
+            "dependsOn": [
+                "[resourceId('Microsoft.Cdn/profiles', parameters('profileName'))]"
+            ],
+            "properties": {
+                "originHostHeader": "[parameters('originUrl')]",
+                "isHttpAllowed": true,
+                "isHttpsAllowed": true,
+                "queryStringCachingBehavior": "IgnoreQueryString",
+                "contentTypesToCompress": [
+                    "text/plain",
+                    "text/html",
+                    "text/css",
+                    "text/javascript",
+                    "application/x-javascript",
+                    "application/javascript",
+                    "application/json",
+                    "application/xml"
+                ],
+                "isCompressionEnabled": true,
+                "origins": [
+                    {
+                        "name": "origin1",
+                        "properties": {
+                            "hostName": "[parameters('originUrl')]",
+                            "httpPort": 80,
+                            "httpsPort": 443
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

@@ -1,56 +1,41 @@
-using Microsoft.EntityFrameworkCore;
-using IslamicPOS.Core.Interfaces;
-using IslamicPOS.Core.Models;
-using IslamicPOS.Infrastructure.Data;
-
 namespace IslamicPOS.Infrastructure.Repositories;
 
-public class ProductRepository : IProductRepository
+public class ProductRepository : BaseRepository<Product>, IProductRepository
 {
-    private readonly ApplicationDbContext _context;
-
-    public ProductRepository(ApplicationDbContext context)
+    public ProductRepository(ApplicationDbContext context) : base(context)
     {
-        _context = context;
     }
 
-    public async Task<Product> CreateAsync(Product product)
+    public async Task<IEnumerable<Product>> GetLowStockProductsAsync(int threshold = 10)
     {
-        _context.Products.Add(product);
-        await _context.SaveChangesAsync();
-        return product;
-    }
-
-    public async Task<Product?> GetByIdAsync(Guid id)
-    {
-        return await _context.Products.FindAsync(id);
+        return await _dbSet
+            .Where(p => p.StockQuantity <= threshold && p.IsActive)
+            .OrderBy(p => p.StockQuantity)
+            .ToListAsync();
     }
 
     public async Task<Product?> GetByBarcodeAsync(string barcode)
     {
-        return await _context.Products
-            .FirstOrDefaultAsync(p => p.Barcode == barcode);
+        return await _dbSet
+            .FirstOrDefaultAsync(p => p.Barcode == barcode && p.IsActive);
     }
 
-    public async Task<IEnumerable<Product>> GetAllAsync()
+    public async Task<decimal> GetTotalInventoryValueAsync()
     {
-        return await _context.Products.ToListAsync();
+        return await _dbSet
+            .Where(p => p.IsActive)
+            .SumAsync(p => p.Price * p.StockQuantity);
     }
 
-    public async Task<IEnumerable<Product>> SearchAsync(string query)
+    public async Task<bool> UpdateStockAsync(int productId, int quantity)
     {
-        return await _context.Products
-            .Where(p => p.Name.Contains(query) || p.Barcode.Contains(query))
-            .ToListAsync();
-    }
+        var product = await _dbSet.FindAsync(productId);
+        if (product == null) return false;
 
-    public async Task UpdateStockAsync(Guid id, int quantity)
-    {
-        var product = await _context.Products.FindAsync(id);
-        if (product != null)
-        {
-            product.StockQuantity += quantity;
-            await _context.SaveChangesAsync();
-        }
+        product.StockQuantity += quantity;
+        product.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+        return true;
     }
 }

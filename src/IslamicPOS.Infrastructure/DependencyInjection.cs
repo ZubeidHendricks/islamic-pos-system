@@ -3,30 +3,47 @@ using IslamicPOS.Core.Loyalty.Interfaces;
 using IslamicPOS.Core.Subscription.Interfaces;
 using IslamicPOS.Core.Ticketing.Interfaces;
 using IslamicPOS.Core.Services;
+using IslamicPOS.Core.Services.Auth;
+using IslamicPOS.Core.Services.Financial;
+using IslamicPOS.Core.Services.Reports;
+using IslamicPOS.Core.Logistics.Interfaces;
+using IslamicPOS.Infrastructure.Logistics.Services;
 using IslamicPOS.Infrastructure.Services;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
 
-namespace IslamicPOS.Infrastructure
+namespace IslamicPOS.Infrastructure;
+
+public static class DependencyInjection
 {
-    public static class DependencyInjection
+    public static IServiceCollection AddInfrastructureServices(
+        this IServiceCollection services,
+        IConfiguration configuration)
     {
-        public static IServiceCollection AddInfrastructureServices(this IServiceCollection services)
-        {
-            // Register Core Services
-            services.AddScoped<IZakaahCalculator, ZakaahCalculator>();
-            services.AddScoped<IProfitDistributionService, ProfitDistributionService>();
+        // Logistics Services
+        services.AddScoped<IRouteOptimizationService, RouteOptimizationService>();
+        services.AddScoped<IVendorDeliveryService, VendorDeliveryService>();
 
-            // Register Barcode Service
-            services.AddScoped<IBarcodeService, BarcodeService>();
+        // Auth Services
+        services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<ITokenService, TokenService>();
 
-            // Register Ticketing Service
-            services.AddScoped<ITicketService, TicketService>();
+        // Core Business Services
+        services.AddScoped<IProfitDistributionService, ProfitDistributionService>();
+        services.AddScoped<IPartnerService, PartnerService>();
+        services.AddScoped<IReportingService, ReportingService>();
+        services.AddScoped<IZakaahCalculator, ZakaahCalculator>();
 
-            // Register Loyalty Service
-            services.AddScoped<ILoyaltyService, LoyaltyService>();
+        // Integration Services
+        services.AddScoped<IBarcodeService, BarcodeService>();
+        services.AddScoped<ITicketService, TicketService>();
+        services.AddScoped<ILoyaltyService, LoyaltyService>();
+        services.AddScoped<ISubscriptionService, SubscriptionService>();
 
-            // Register Subscription Service
-            services.AddScoped<ISubscriptionService, SubscriptionService>();
+        // Configuration
+        services.Configure<JwtSettings>(configuration.GetSection("JWT"));
+        services.Configure<ZakaahSettings>(configuration.GetSection("ZakaahSettings"));
 
-            return services;
-        }
+        return services;
+    }
+}
