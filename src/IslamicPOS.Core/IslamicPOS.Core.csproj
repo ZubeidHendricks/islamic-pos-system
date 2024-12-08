@@ -1,13 +1,15 @@
-<Project Sdk="Microsoft.NET.Sdk">
+&lt;Project Sdk="Microsoft.NET.Sdk"&gt;
 
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+  &lt;PropertyGroup&gt;
+    &lt;TargetFramework&gt;net8.0&lt;/TargetFramework&gt;
+    &lt;ImplicitUsings&gt;enable&lt;/ImplicitUsings&gt;
+    &lt;Nullable&gt;enable&lt;/Nullable&gt;
+  &lt;/PropertyGroup&gt;
 
-  <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.0" />
-  </ItemGroup>
+  &lt;ItemGroup&gt;
+    &lt;PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.0" /&gt;
+    &lt;PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="8.0.0" /&gt;
+    &lt;PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" /&gt;
+  &lt;/ItemGroup&gt;
 
-</Project>
+&lt;/Project&gt;
