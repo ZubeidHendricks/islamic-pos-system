@@ -6,6 +6,8 @@ using IslamicPOS.Core.Services;
 using IslamicPOS.Core.Services.Auth;
 using IslamicPOS.Core.Services.Financial;
 using IslamicPOS.Core.Services.Reports;
+using IslamicPOS.Core.Logistics.Interfaces;
+using IslamicPOS.Infrastructure.Logistics.Services;
 using IslamicPOS.Infrastructure.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
@@ -18,6 +20,10 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
+        // Logistics Services
+        services.AddScoped<IRouteOptimizationService, RouteOptimizationService>();
+        services.AddScoped<IVendorDeliveryService, VendorDeliveryService>();
+
         // Auth Services
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<ITokenService, TokenService>();
