@@ -1,0 +1,31 @@
+@using IslamicPOS.Web.Services.ABTesting
+@inject IABTestingService ABTestingService
+@inject ICurrentUser CurrentUser
+
+@if (IsEnabled)
+{
+    @ChildContent
+}
+
+@code {
+    [Parameter] public string FeatureName { get; set; }
+    [Parameter] public string[] EnabledVariants { get; set; }
+    [Parameter] public RenderFragment ChildContent { get; set; }
+
+    private bool IsEnabled => EnabledVariants?.Contains(
+        ABTestingService.GetVariant(FeatureName, CurrentUser.Id)
+    ) ?? false;
+
+    protected override void OnInitialized()
+    {
+        if (IsEnabled)
+        {
+            ABTestingService.TrackEvent(
+                FeatureName,
+                ABTestingService.GetVariant(FeatureName, CurrentUser.Id),
+                "feature_viewed",
+                CurrentUser.Id
+            );
+        }
+    }
+}

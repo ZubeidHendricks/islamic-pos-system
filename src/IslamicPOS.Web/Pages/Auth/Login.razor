@@ -1,0 +1,85 @@
+@page "/login"
+@using IslamicPOS.Core.Services.Auth
+@inject IAuthService AuthService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="d-flex justify-center align-center" Style="height: 100vh;">
+    <MudPaper Class="pa-8" Style="width: 100%;">
+        <MudText Typo="Typo.h4" Class="mb-4" Align="Align.Center">Islamic POS Login</MudText>
+        
+        <MudForm @ref="_form" @bind-IsValid="@_success">
+            <MudTextField T="string" 
+                         Label="Username" 
+                         @bind-Value="_username" 
+                         Required="true"
+                         RequiredError="Username is required"
+                         Class="mb-4" />
+            
+            <MudTextField T="string" 
+                         Label="Password" 
+                         @bind-Value="_password"
+                         Required="true"
+                         RequiredError="Password is required"
+                         InputType="InputType.Password"
+                         Class="mb-6" />
+            
+            <MudButton Variant="Variant.Filled" 
+                       Color="Color.Primary" 
+                       Size="Size.Large"
+                       FullWidth="true"
+                       OnClick="LoginAsync"
+                       Disabled="!_success || _processing">
+                @if (_processing)
+                {
+                    <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                    <MudText Class="ms-2">Processing</MudText>
+                }
+                else
+                {
+                    <MudText>Login</MudText>
+                }
+            </MudButton>
+        </MudForm>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private MudForm _form;
+    private string _username = "";
+    private string _password = "";
+    private bool _success;
+    private bool _processing;
+
+    private async Task LoginAsync()
+    {
+        if (_processing) return;
+        
+        try
+        {
+            _processing = true;
+            await _form.Validate();
+            
+            if (_success)
+            {
+                var result = await AuthService.LoginAsync(_username, _password);
+                if (result.Success)
+                {
+                    NavigationManager.NavigateTo("/");
+                }
+                else
+                {
+                    Snackbar.Add("Invalid username or password", Severity.Error);
+                }
+            }
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("An error occurred during login", Severity.Error);
+        }
+        finally
+        {
+            _processing = false;
+        }
+    }
+}
