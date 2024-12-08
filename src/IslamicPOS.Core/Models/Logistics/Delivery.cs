@@ -14,6 +14,17 @@ public class DeliveryPoint : Entity
     public string? Instructions { get; set; }
 }
 
+public class Vehicle : Entity
+{
+    public string RegistrationNumber { get; set; } = string.Empty;
+    public string Model { get; set; } = string.Empty;
+    public string Make { get; set; } = string.Empty;
+    public decimal LoadCapacity { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public DateTime? LastMaintenanceDate { get; set; }
+    public DateTime? NextMaintenanceDate { get; set; }
+}
+
 public class DeliveryOrder : Entity
 {
     public Guid TransactionId { get; set; }
@@ -27,20 +38,22 @@ public class DeliveryOrder : Entity
     public Vehicle? Vehicle { get; set; }
 }
 
-public class DeliveryStatus : Entity
+public class OptimizedRoute : Entity
+{
+    public Guid VehicleId { get; set; }
+    public Vehicle Vehicle { get; set; } = null!;
+    public List<DeliveryPoint> Points { get; set; } = new();
+    public double TotalDistance { get; set; }
+    public TimeSpan EstimatedDuration { get; set; }
+    public List<DeliveryOrder> Orders { get; set; } = new();
+}
+
+public class DeliveryAlert : Entity
 {
     public Guid DeliveryOrderId { get; set; }
     public DeliveryOrder DeliveryOrder { get; set; } = null!;
-    public string Status { get; set; } = string.Empty;
-    public string? Location { get; set; }
-    public string? Notes { get; set; }
-}
-
-public class DeliverySchedule : Entity
-{
-    public DateTime ScheduleDate { get; set; }
-    public Guid VehicleId { get; set; }
-    public Vehicle Vehicle { get; set; } = null!;
-    public List<DeliveryOrder> Orders { get; set; } = new();
-    public string Status { get; set; } = string.Empty;
+    public string AlertType { get; set; } = string.Empty;
+    public string Message { get; set; } = string.Empty;
+    public bool IsResolved { get; set; }
+    public DateTime? ResolvedAt { get; set; }
 }
