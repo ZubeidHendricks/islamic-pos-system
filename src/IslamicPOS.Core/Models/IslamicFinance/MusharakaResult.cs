@@ -1,20 +1,14 @@
-namespace IslamicPOS.Core.Models.IslamicFinance;
-
-public class MusharakaResult
+namespace IslamicPOS.Core.Models.IslamicFinance
 {
-    public decimal TotalCapital { get; set; }
-    public decimal TotalProfit { get; set; }
-    public List<PartnerShare> Partners { get; set; } = new();
-
-    public bool IsLoss => TotalProfit < 0;
-    public decimal ReturnOnInvestment => TotalCapital > 0 ? (TotalProfit / TotalCapital) * 100 : 0;
-}
-
-public class PartnerShare
-{
-    public string PartnerName { get; set; } = string.Empty;
-    public decimal CapitalContribution { get; set; }
-    public decimal CapitalSharePercentage { get; set; }
-    public decimal ProfitSharePercentage { get; set; }
-    public decimal ProfitAmount { get; set; }
+    public class MusharakaResult
+    {
+        public decimal TotalInvestment { get; set; }
+        public decimal Partner1Investment { get; set; }
+        public decimal Partner2Investment { get; set; }
+        public decimal ProfitSharingRatio1 { get; set; }
+        public decimal ProfitSharingRatio2 { get; set; }
+        public decimal Partner1Share { get; set; }
+        public decimal Partner2Share { get; set; }
+        public DateTime CalculationDate { get; set; }
+    }
 }

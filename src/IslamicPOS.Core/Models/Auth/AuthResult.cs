@@ -1,9 +1,11 @@
-namespace IslamicPOS.Core.Models.Auth;
-
-public class AuthResult
+namespace IslamicPOS.Core.Models.Auth
 {
-    public bool Success { get; set; }
-    public string Token { get; set; } = string.Empty;
-    public string Message { get; set; } = string.Empty;
-    public UserInfo? User { get; set; }
+    public class AuthResult
+    {
+        public bool Success { get; set; }
+        public string Token { get; set; }
+        public string RefreshToken { get; set; }
+        public DateTime Expiration { get; set; }
+        public string Error { get; set; }
+    }
 }
