@@ -26,53 +26,27 @@ public class MusharakaResult : Entity
     public DateTime CalculationDate { get; set; }
 }
 
-public class Partner : Entity
+public class ZakaatInput
 {
-    public string Name { get; set; } = string.Empty;
-    public string Email { get; set; } = string.Empty;
-    public string PhoneNumber { get; set; } = string.Empty;
-    public string Status { get; set; } = string.Empty;
-    public decimal SharePercentage { get; set; }
-    public DateTime JoinDate { get; set; }
-    public List<PartnerShare> Shares { get; set; } = new();
-}
-
-public class ProfitDistribution : Entity
-{
-    public DateTime DistributionDate { get; set; }
-    public decimal TotalProfit { get; set; }
-    public decimal ZakaatAmount { get; set; }
-    public decimal DistributableProfit { get; set; }
-    public List<PartnerShare> PartnerShares { get; set; } = new();
-    public string Status { get; set; } = string.Empty;
+    public decimal GoldValue { get; set; }
+    public decimal SilverValue { get; set; }
+    public decimal CashValue { get; set; }
+    public decimal BusinessAssets { get; set; }
+    public decimal Receivables { get; set; }
+    public decimal Debts { get; set; }
+    public decimal OtherAssets { get; set; }
     public string? Notes { get; set; }
 }
 
-public class PartnerShare : Entity
+public class ZakaatCalculation : Entity
 {
-    public Guid ProfitDistributionId { get; set; }
-    public ProfitDistribution ProfitDistribution { get; set; } = null!;
-    public Guid PartnerId { get; set; }
-    public Partner Partner { get; set; } = null!;
-    public decimal SharePercentage { get; set; }
-    public decimal Amount { get; set; }
-    public string Status { get; set; } = string.Empty;
-    public DateTime? PaidDate { get; set; }
-}
-
-public class DistributionResult
-{
-    public bool Success { get; set; }
-    public ProfitDistribution Distribution { get; set; } = null!;
-    public string Message { get; set; } = string.Empty;
-    public List<string> Errors { get; set; } = new();
-}
-
-public class DistributionHistory : Entity
-{
-    public Guid ProfitDistributionId { get; set; }
-    public ProfitDistribution ProfitDistribution { get; set; } = null!;
-    public string Action { get; set; } = string.Empty;
-    public string Details { get; set; } = string.Empty;
-    public string Status { get; set; } = string.Empty;
+    public decimal BusinessAssets { get; set; }
+    public decimal CashAndEquivalents { get; set; }
+    public decimal Inventory { get; set; }
+    public decimal AccountsReceivable { get; set; }
+    public decimal Liabilities { get; set; }
+    public decimal TotalZakaableAmount { get; set; }
+    public decimal ZakaatPayable { get; set; }
+    public DateTime CalculationDate { get; set; }
+    public string? Notes { get; set; }
 }
