@@ -1,5 +1,5 @@
 using IslamicPOS.Core.Models.Common;
-using IslamicPOS.Core.Models.Products;
+using IslamicPOS.Core.Models.Catalog;
 
 namespace IslamicPOS.Core.Models.Transactions;
 
@@ -12,6 +12,10 @@ public class Transaction : Entity
     public string UserId { get; set; } = string.Empty;
     public List<TransactionItem> Items { get; set; } = new();
     public string PaymentMethod { get; set; } = string.Empty;
+    public DateTime TransactionDate { get; set; }
+    public decimal SubTotal { get; set; }
+    public decimal Tax { get; set; }
+    public decimal Discount { get; set; }
     public string? Notes { get; set; }
 }
 
