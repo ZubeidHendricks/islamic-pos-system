@@ -12,3 +12,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IslamicPOS.Infrastructure",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IslamicPOS.Server", "src\IslamicPOS.Server\IslamicPOS.Server.csproj", "{4B0C39D8-889C-4849-9DDB-99E39C99965E}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{8B19103F-16F7-4668-BE54-9A1E7A4F7556}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IslamicPOS.Tests", "tests\IslamicPOS.Tests\IslamicPOS.Tests.csproj", "{5B0C39D8-889C-4849-9DDB-99E39C99965E}"
+EndProject
