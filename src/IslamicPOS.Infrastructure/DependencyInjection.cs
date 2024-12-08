@@ -30,5 +30,3 @@ namespace IslamicPOS.Infrastructure
 
             return services;
         }
-    }
-}
