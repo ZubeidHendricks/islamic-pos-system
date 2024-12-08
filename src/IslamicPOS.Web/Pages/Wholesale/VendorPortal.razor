@@ -1,0 +1,242 @@
+@page "/wholesale/vendor-portal"
+@using IslamicPOS.Core.Models.Wholesale
+@using IslamicPOS.Core.Services.Wholesale
+@inject IVendorService VendorService
+@inject IQualityControlService QualityService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <MudGrid>
+        <!-- Vendor Performance Metrics -->
+        <MudItem xs="12" md="3">
+            <MudPaper Class="pa-4" Elevation="2">
+                <MudStack>
+                    <MudIcon Icon="@Icons.Material.Filled.Stars" 
+                            Color="@GetScoreColor(_vendorScore.ReputationScore)" 
+                            Size="Size.Large" />
+                    <MudText Typo="Typo.h5">@_vendorScore.ReputationScore.ToString("N1")</MudText>
+                    <MudText>Reputation Score</MudText>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" md="3">
+            <MudPaper Class="pa-4" Elevation="2">
+                <MudStack>
+                    <MudIcon Icon="@Icons.Material.Filled.Verified" Color="Color.Success" Size="Size.Large" />
+                    <MudText Typo="Typo.h5">@(_vendorScore.TotalOrders - _vendorScore.ReturnedOrders)</MudText>
+                    <MudText>Successful Deliveries</MudText>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" md="3">
+            <MudPaper Class="pa-4" Elevation="2">
+                <MudStack>
+                    <MudIcon Icon="@Icons.Material.Filled.Assignment" 
+                            Color="@GetStatusColor(_vendorScore.QualityScore)" 
+                            Size="Size.Large" />
+                    <MudText Typo="Typo.h5">@_vendorScore.QualityScore.ToString("N1")%</MudText>
+                    <MudText>Quality Score</MudText>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" md="3">
+            <MudPaper Class="pa-4" Elevation="2">
+                <MudStack>
+                    <MudIcon Icon="@Icons.Material.Filled.LocalShipping" 
+                            Color="@GetStatusColor(_vendorScore.DeliveryScore)" 
+                            Size="Size.Large" />
+                    <MudText Typo="Typo.h5">@_vendorScore.DeliveryScore.ToString("N1")%</MudText>
+                    <MudText>Delivery Score</MudText>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Product Catalog and Order Management -->
+        <MudItem xs="12">
+            <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-6">
+                <!-- Product Catalog -->
+                <MudTabPanel Text="Product Catalog">
+                    <MudToolBar Dense="true">
+                        <MudText Typo="Typo.h6">Products</MudText>
+                        <MudSpacer />
+                        <MudButton Variant="Variant.Filled"
+                                  Color="Color.Primary"
+                                  StartIcon="@Icons.Material.Filled.Add"
+                                  OnClick="AddProduct">Add Product</MudButton>
+                    </MudToolBar>
+
+                    <MudTable Items="@_products" Dense="true" Hover="true" Loading="_loading"
+                             Filter="new Func<VendorProduct,bool>(FilterProducts)"
+                             @bind-SelectedItem="_selectedProduct">
+                        <ToolBarContent>
+                            <MudTextField @bind-Value="_searchString"
+                                        Placeholder="Search products"
+                                        Adornment="Adornment.Start"
+                                        AdornmentIcon="@Icons.Material.Filled.Search"
+                                        IconSize="Size.Medium"
+                                        Class="mt-0" />
+                        </ToolBarContent>
+
+                        <HeaderContent>
+                            <MudTh>Product Name</MudTh>
+                            <MudTh>SKU</MudTh>
+                            <MudTh>Price</MudTh>
+                            <MudTh>Stock</MudTh>
+                            <MudTh>Halal Status</MudTh>
+                            <MudTh>Quality Checks</MudTh>
+                            <MudTh>Actions</MudTh>
+                        </HeaderContent>
+
+                        <RowTemplate>
+                            <MudTd DataLabel="Product Name">@context.Name</MudTd>
+                            <MudTd DataLabel="SKU">@context.SKU</MudTd>
+                            <MudTd DataLabel="Price">@context.WholesalePrice.ToString("C")</MudTd>
+                            <MudTd DataLabel="Stock">
+                                <MudChip Color="@(context.IsLowStock ? Color.Error : Color.Success)" Size="Size.Small">
+                                    @context.AvailableStock
+                                </MudChip>
+                            </MudTd>
+                            <MudTd DataLabel="Halal Status">
+                                @if (context.IsHalal)
+                                {
+                                    <MudChip Color="Color.Success" Size="Size.Small">Certified</MudChip>
+                                }
+                                else
+                                {
+                                    <MudChip Color="Color.Error" Size="Size.Small">Not Certified</MudChip>
+                                }
+                            </MudTd>
+                            <MudTd DataLabel="Quality Checks">
+                                @{
+                                    var inspections = _productInspections.GetValueOrDefault(context.Id, new());
+                                    var latestInspection = inspections.OrderByDescending(i => i.InspectionDate).FirstOrDefault();
+                                    if (latestInspection != null)
+                                    {
+                                        <MudChip Color="@GetInspectionColor(latestInspection.Result)" Size="Size.Small">
+                                            @latestInspection.Result.ToString()
+                                        </MudChip>
+                                    }
+                                }
+                            </MudTd>
+                            <MudTd>
+                                <MudMenu Icon="@Icons.Material.Filled.MoreVert">
+                                    <MudMenuItem OnClick="() => EditProduct(context)">Edit</MudMenuItem>
+                                    <MudMenuItem OnClick="() => ViewInspections(context)">View Inspections</MudMenuItem>
+                                    <MudMenuItem OnClick="() => UpdateStock(context)">Update Stock</MudMenuItem>
+                                    <MudMenuItem OnClick="() => UpdateHalalStatus(context)">Update Halal Status</MudMenuItem>
+                                </MudMenu>
+                            </MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                </MudTabPanel>
+
+                <!-- Orders -->
+                <MudTabPanel Text="Orders">
+                    <MudToolBar Dense="true">
+                        <MudText Typo="Typo.h6">Purchase Orders</MudText>
+                    </MudToolBar>
+
+                    <MudTable Items="@_orders" Dense="true" Hover="true" Loading="_loading"
+                             Filter="new Func<VendorOrder,bool>(FilterOrders)">
+                        <HeaderContent>
+                            <MudTh>Order #</MudTh>
+                            <MudTh>Date</MudTh>
+                            <MudTh>Items</MudTh>
+                            <MudTh>Total</MudTh>
+                            <MudTh>Status</MudTh>
+                            <MudTh>Auto-Approved</MudTh>
+                            <MudTh>Actions</MudTh>
+                        </HeaderContent>
+
+                        <RowTemplate>
+                            <MudTd DataLabel="Order #">@context.OrderNumber</MudTd>
+                            <MudTd DataLabel="Date">@context.OrderDate.ToString("MMM dd, yyyy")</MudTd>
+                            <MudTd DataLabel="Items">@context.Items.Count items</MudTd>
+                            <MudTd DataLabel="Total">@context.TotalValue.ToString("C")</MudTd>
+                            <MudTd DataLabel="Status">
+                                <MudChip Color="@GetOrderStatusColor(context.Status)" Size="Size.Small">
+                                    @context.Status
+                                </MudChip>
+                            </MudTd>
+                            <MudTd DataLabel="Auto-Approved">
+                                @if (context.IsAutoApproved)
+                                {
+                                    <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" />
+                                }
+                                else
+                                {
+                                    <MudIcon Icon="@Icons.Material.Filled.Close" Color="Color.Error" />
+                                }
+                            </MudTd>
+                            <MudTd>
+                                <MudButton Variant="Variant.Filled"
+                                          Size="Size.Small"
+                                          Color="Color.Primary"
+                                          OnClick="() => ViewOrder(context)">View Details</MudButton>
+                            </MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                </MudTabPanel>
+
+                <!-- Quality Control -->
+                <MudTabPanel Text="Quality Control">
+                    <MudToolBar Dense="true">
+                        <MudText Typo="Typo.h6">Quality Inspections</MudText>
+                    </MudToolBar>
+
+                    <MudTable Items="@_inspections" Dense="true" Hover="true" Loading="_loading">
+                        <HeaderContent>
+                            <MudTh>Date</MudTh>
+                            <MudTh>Product</MudTh>
+                            <MudTh>Batch Code</MudTh>
+                            <MudTh>Result</MudTh>
+                            <MudTh>Defect Rate</MudTh>
+                            <MudTh>Halal Check</MudTh>
+                            <MudTh>Status</MudTh>
+                        </HeaderContent>
+
+                        <RowTemplate>
+                            <MudTd DataLabel="Date">@context.InspectionDate.ToString("MMM dd, yyyy")</MudTd>
+                            <MudTd DataLabel="Product">@GetProductName(context.ProductId)</MudTd>
+                            <MudTd DataLabel="Batch Code">@context.BatchCode</MudTd>
+                            <MudTd DataLabel="Result">
+                                <MudChip Color="@GetInspectionColor(context.Result)" Size="Size.Small">
+                                    @context.Result.ToString()
+                                </MudChip>
+                            </MudTd>
+                            <MudTd DataLabel="Defect Rate">@context.DefectRate.ToString("N1")%</MudTd>
+                            <MudTd DataLabel="Halal Check">
+                                @if (context.HalalChecks.All(h => h.IsVerified))
+                                {
+                                    <MudChip Color="Color.Success" Size="Size.Small">Verified</MudChip>
+                                }
+                                else
+                                {
+                                    <MudChip Color="Color.Error" Size="Size.Small">Issues Found</MudChip>
+                                }
+                            </MudTd>
+                            <MudTd DataLabel="Status">
+                                @if (context.IsApproved)
+                                {
+                                    <MudChip Color="Color.Success" Size="Size.Small">Approved</MudChip>
+                                }
+                                else if (context.RequiresManagerReview)
+                                {
+                                    <MudChip Color="Color.Warning" Size="Size.Small">Review Pending</MudChip>
+                                }
+                                else
+                                {
+                                    <MudChip Color="Color.Info" Size="Size.Small">Processing</MudChip>
+                                }
+                            </MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                </MudTabPanel>
+            </MudTabs>
+        </MudItem>
+    </MudGrid>
+</MudContainer>

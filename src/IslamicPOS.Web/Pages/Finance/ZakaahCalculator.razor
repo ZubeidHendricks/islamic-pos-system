@@ -1,0 +1,193 @@
+@page "/zakaah-calculator"
+@using IslamicPOS.Core.Services
+@using IslamicPOS.Core.Models
+@inject IZakaatService ZakaatService
+@inject ISnackbar Snackbar
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudGrid>
+        <!-- Calculator Form -->
+        <MudItem xs="12" md="8">
+            <MudPaper Class="pa-4">
+                <MudText Typo="Typo.h5" Class="mb-4">Zakaah Calculator</MudText>
+                <MudForm @ref="_form" @bind-IsValid="@_isValid">
+                    <MudGrid>
+                        <MudItem xs="12">
+                            <MudAlert Severity="Severity.Info" Class="mb-4">
+                                Current Nisab Threshold: @_nisabThreshold.ToString("C")
+                            </MudAlert>
+                        </MudItem>
+
+                        <MudItem xs="12" md="6">
+                            <MudNumericField T="decimal"
+                                           @bind-Value="_input.Cash"
+                                           Label="Cash on Hand"
+                                           Format="C"
+                                           AdornmentIcon="@Icons.Material.Filled.MonetizationOn"
+                                           Adornment="Adornment.Start" />
+                        </MudItem>
+
+                        <MudItem xs="12" md="6">
+                            <MudNumericField T="decimal"
+                                           @bind-Value="_input.BankAccounts"
+                                           Label="Bank Accounts"
+                                           Format="C"
+                                           AdornmentIcon="@Icons.Material.Filled.AccountBalance"
+                                           Adornment="Adornment.Start" />
+                        </MudItem>
+
+                        <MudItem xs="12" md="6">
+                            <MudNumericField T="decimal"
+                                           @bind-Value="_input.Gold"
+                                           Label="Gold Value"
+                                           Format="C"
+                                           AdornmentIcon="@Icons.Material.Filled.Star"
+                                           Adornment="Adornment.Start" />
+                        </MudItem>
+
+                        <MudItem xs="12" md="6">
+                            <MudNumericField T="decimal"
+                                           @bind-Value="_input.Silver"
+                                           Label="Silver Value"
+                                           Format="C"
+                                           AdornmentIcon="@Icons.Material.Filled.StarBorder"
+                                           Adornment="Adornment.Start" />
+                        </MudItem>
+
+                        <MudItem xs="12" md="6">
+                            <MudNumericField T="decimal"
+                                           @bind-Value="_input.Investments"
+                                           Label="Investments"
+                                           Format="C"
+                                           AdornmentIcon="@Icons.Material.Filled.TrendingUp"
+                                           Adornment="Adornment.Start" />
+                        </MudItem>
+
+                        <MudItem xs="12" md="6">
+                            <MudNumericField T="decimal"
+                                           @bind-Value="_input.BusinessInventory"
+                                           Label="Business Inventory"
+                                           Format="C"
+                                           AdornmentIcon="@Icons.Material.Filled.Inventory"
+                                           Adornment="Adornment.Start" />
+                        </MudItem>
+
+                        <MudItem xs="12" md="6">
+                            <MudNumericField T="decimal"
+                                           @bind-Value="_input.AccountsReceivable"
+                                           Label="Accounts Receivable"
+                                           Format="C"
+                                           AdornmentIcon="@Icons.Material.Filled.Receipt"
+                                           Adornment="Adornment.Start" />
+                        </MudItem>
+
+                        <MudItem xs="12" md="6">
+                            <MudNumericField T="decimal"
+                                           @bind-Value="_input.OtherAssets"
+                                           Label="Other Assets"
+                                           Format="C"
+                                           AdornmentIcon="@Icons.Material.Filled.Add"
+                                           Adornment="Adornment.Start" />
+                        </MudItem>
+
+                        <MudDivider Class="my-6" />
+
+                        <MudItem xs="12">
+                            <MudNumericField T="decimal"
+                                           @bind-Value="_input.Liabilities"
+                                           Label="Total Liabilities"
+                                           Format="C"
+                                           AdornmentIcon="@Icons.Material.Filled.Remove"
+                                           Adornment="Adornment.Start" />
+                        </MudItem>
+
+                        <MudItem xs="12" Class="d-flex justify-center mt-4">
+                            <MudButton Variant="Variant.Filled"
+                                      Color="Color.Primary"
+                                      Size="Size.Large"
+                                      OnClick="CalculateZakaah"
+                                      Disabled="_processing">
+                                Calculate Zakaah
+                            </MudButton>
+                        </MudItem>
+                    </MudGrid>
+                </MudForm>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Results -->
+        <MudItem xs="12" md="4">
+            @if (_calculation != null)
+            {
+                <MudPaper Class="pa-4" Style="position: sticky; top: 1rem;">
+                    <MudText Typo="Typo.h5" Class="mb-4">Zakaah Summary</MudText>
+
+                    <MudList Dense="true">
+                        <MudListItem>
+                            <MudText><strong>Total Assets:</strong></MudText>
+                            <MudText>@_calculation.TotalAssets.ToString("C")</MudText>
+                        </MudListItem>
+                        <MudListItem>
+                            <MudText><strong>Total Liabilities:</strong></MudText>
+                            <MudText>@_calculation.Liabilities.ToString("C")</MudText>
+                        </MudListItem>
+                        <MudListItem>
+                            <MudText><strong>Net Worth:</strong></MudText>
+                            <MudText>@(_calculation.TotalAssets - _calculation.Liabilities).ToString("C")</MudText>
+                        </MudListItem>
+                        <MudDivider Class="my-2" />
+                        <MudListItem>
+                            <MudText Typo="Typo.h6"><strong>Zakaah Due:</strong></MudText>
+                            <MudText Typo="Typo.h6" Color="Color.Primary">@_calculation.ZakaatAmount.ToString("C")</MudText>
+                        </MudListItem>
+                    </MudList>
+
+                    <MudButton Variant="Variant.Outlined"
+                              Color="Color.Primary"
+                              FullWidth="true"
+                              OnClick="GenerateReport"
+                              Class="mt-4">Generate Report</MudButton>
+                </MudPaper>
+            }
+        </MudItem>
+    </MudGrid>
+</MudContainer>
+
+@code {
+    private MudForm _form;
+    private bool _isValid;
+    private bool _processing;
+    private decimal _nisabThreshold;
+    private ZakaatInput _input = new();
+    private ZakaatCalculation _calculation;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _nisabThreshold = await ZakaatService.GetCurrentNisabThreshold();
+    }
+
+    private async Task CalculateZakaah()
+    {
+        try
+        {
+            _processing = true;
+            _calculation = await ZakaatService.CalculateZakaat(_input);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Error calculating Zakaah: " + ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _processing = false;
+        }
+    }
+
+    private async Task GenerateReport()
+    {
+        if (_calculation == null) return;
+
+        // TODO: Implement report generation
+        Snackbar.Add("Report generation will be implemented soon", Severity.Info);
+    }
+}

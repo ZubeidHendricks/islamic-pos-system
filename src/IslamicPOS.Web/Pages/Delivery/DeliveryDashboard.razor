@@ -1,0 +1,149 @@
+@page "/delivery"
+@using IslamicPOS.Core.Services.Delivery
+@inject IRouteOptimizationService RouteService
+@inject ISnackbar Snackbar
+@attribute [Authorize]
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <MudText Typo="Typo.h4" Class="mb-4">Delivery Management</MudText>
+
+    <MudGrid>
+        <!-- Summary Cards -->
+        <MudItem xs="12" md="3">
+            <MudPaper Class="pa-4" Elevation="2">
+                <MudText Typo="Typo.h6">Today's Deliveries</MudText>
+                <MudText Typo="Typo.h4" Color="Color.Primary">@_todayDeliveries.Count</MudText>
+                <MudText Typo="Typo.body2">@_completedDeliveries.Count completed</MudText>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" md="3">
+            <MudPaper Class="pa-4" Elevation="2">
+                <MudText Typo="Typo.h6">Active Routes</MudText>
+                <MudText Typo="Typo.h4" Color="Color.Secondary">@_activeRoutes</MudText>
+                <MudText Typo="Typo.body2">@_pendingDeliveries.Count pending</MudText>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" md="3">
+            <MudPaper Class="pa-4" Elevation="2">
+                <MudText Typo="Typo.h6">Halal Certified Routes</MudText>
+                <MudText Typo="Typo.h4" Color="Color.Success">@_halalCertifiedRoutes</MudText>
+                <MudText Typo="Typo.body2">of @_totalRoutes total routes</MudText>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" md="3">
+            <MudPaper Class="pa-4" Elevation="2">
+                <MudText Typo="Typo.h6">Total Distance</MudText>
+                <MudText Typo="Typo.h4">@_totalDistance.ToString("F1") km</MudText>
+                <MudText Typo="Typo.body2">Estimated duration: @_totalDuration.ToString(@"hh\:mm")</MudText>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Route Map -->
+        <MudItem xs="12" md="8">
+            <MudPaper Class="pa-4">
+                <div class="d-flex justify-space-between align-center mb-4">
+                    <MudText Typo="Typo.h6">Route Map</MudText>
+                    <MudButton Variant="Variant.Filled"
+                             Color="Color.Primary"
+                             OnClick="OptimizeRoutes"
+                             StartIcon="@Icons.Material.Filled.Route">
+                        Optimize Routes
+                    </MudButton>
+                </div>
+                <!-- Map Component would go here -->
+                <div style="height: 400px; background-color: #f5f5f5; border-radius: 4px;">
+                    <!-- Placeholder for map -->
+                </div>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Delivery List -->
+        <MudItem xs="12" md="4">
+            <MudPaper Class="pa-4">
+                <MudText Typo="Typo.h6" Class="mb-4">Today's Deliveries</MudText>
+                <MudList Dense="true" DisablePadding="true">
+                    @foreach (var delivery in _todayDeliveries)
+                    {
+                        <MudListItem>
+                            <div class="d-flex justify-space-between align-center">
+                                <div>
+                                    <MudText>@delivery.Name</MudText>
+                                    <MudText Typo="Typo.caption">
+                                        @delivery.DeliveryWindow.Start.ToString("HH:mm") - 
+                                        @delivery.DeliveryWindow.End.ToString("HH:mm")
+                                    </MudText>
+                                </div>
+                                <MudChip Size="Size.Small"
+                                        Color="@(delivery.RequiresHalalCertified ? Color.Success : Color.Default)">
+                                    @(delivery.RequiresHalalCertified ? "Halal" : "Standard")
+                                </MudChip>
+                            </div>
+                        </MudListItem>
+                    }
+                </MudList>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+</MudContainer>
+
+@code {
+    private List<DeliveryPoint> _todayDeliveries = new();
+    private List<DeliveryPoint> _completedDeliveries = new();
+    private List<DeliveryPoint> _pendingDeliveries = new();
+    private int _activeRoutes;
+    private int _halalCertifiedRoutes;
+    private int _totalRoutes;
+    private double _totalDistance;
+    private TimeSpan _totalDuration;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDeliveryData();
+    }
+
+    private async Task LoadDeliveryData()
+    {
+        try
+        {
+            var routes = await RouteService.GenerateDailyRoutesAsync(DateTime.Today);
+            
+            _todayDeliveries = routes
+                .SelectMany(r => r.Stops)
+                .Distinct()
+                .ToList();
+
+            _activeRoutes = routes.Count(r => r.Status == "Active");
+            _halalCertifiedRoutes = routes.Count(r => r.IsHalalCertified);
+            _totalRoutes = routes.Count;
+            
+            _totalDistance = routes.Sum(r => r.TotalDistance);
+            _totalDuration = TimeSpan.FromTicks(
+                routes.Sum(r => r.EstimatedDuration.Ticks)
+            );
+
+            // Simulated data for demo
+            _completedDeliveries = _todayDeliveries.Take(3).ToList();
+            _pendingDeliveries = _todayDeliveries.Skip(3).ToList();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Error loading delivery data", Severity.Error);
+        }
+    }
+
+    private async Task OptimizeRoutes()
+    {
+        try
+        {
+            await LoadDeliveryData();
+            Snackbar.Add("Routes optimized successfully", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Error optimizing routes", Severity.Error);
+        }
+    }
+}

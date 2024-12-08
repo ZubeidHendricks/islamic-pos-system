@@ -1,0 +1,16 @@
+{
+    "Environments": {
+        "Staging": {
+            "NewUI": true,
+            "DetailedZakaah": true,
+            "AdvancedReporting": true,
+            "BetaFeatures": true
+        },
+        "Production": {
+            "NewUI": false,
+            "DetailedZakaah": true,
+            "AdvancedReporting": false,
+            "BetaFeatures": false
+        }
+    }
+}

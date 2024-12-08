@@ -1,0 +1,242 @@
+@using IslamicPOS.Core.Models.Wholesale
+@inject IVendorService VendorService
+@inject IQualityControlService QualityService
+
+<MudDialog>
+    <DialogContent>
+        <MudContainer Style="max-height: 500px; overflow-y: auto; padding: 0;">
+            <MudForm @ref="_form" @bind-IsValid="@_isValid">
+                <!-- Tab structure for easier navigation -->
+                <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-6">
+                    <!-- Basic Info Tab -->
+                    <MudTabPanel Text="Basic Info">
+                        <MudGrid>
+                            <MudItem xs="12">
+                                <MudTextField @bind-Value="_product.SKU"
+                                            Label="SKU"
+                                            Required="true"
+                                            RequiredError="SKU is required" />
+                            </MudItem>
+
+                            <MudItem xs="12">
+                                <MudTextField @bind-Value="_product.Name"
+                                            Label="Product Name"
+                                            Required="true"
+                                            RequiredError="Product name is required" />
+                            </MudItem>
+
+                            <MudItem xs="12">
+                                <MudTextField @bind-Value="_product.Description"
+                                            Label="Description"
+                                            Lines="3" />
+                            </MudItem>
+                        </MudGrid>
+                    </MudTabPanel>
+
+                    <!-- Pricing Tab -->
+                    <MudTabPanel Text="Pricing & Stock">
+                        <MudGrid>
+                            <MudItem xs="12" md="6">
+                                <MudNumericField @bind-Value="_product.WholesalePrice"
+                                               Label="Wholesale Price"
+                                               Required="true"
+                                               RequiredError="Price is required"
+                                               Min="0"
+                                               Format="N2"
+                                               AdornmentIcon="@Icons.Material.Filled.AttachMoney"
+                                               Adornment="Adornment.Start" />
+                            </MudItem>
+
+                            <MudItem xs="12" md="6">
+                                <MudNumericField @bind-Value="_product.RetailPrice"
+                                               Label="Suggested Retail Price"
+                                               Required="true"
+                                               RequiredError="Price is required"
+                                               Min="0"
+                                               Format="N2"
+                                               AdornmentIcon="@Icons.Material.Filled.AttachMoney"
+                                               Adornment="Adornment.Start" />
+                            </MudItem>
+
+                            <MudItem xs="12" md="6">
+                                <MudNumericField @bind-Value="_product.MinimumOrderQuantity"
+                                               Label="Minimum Order Quantity"
+                                               Required="true"
+                                               RequiredError="MOQ is required"
+                                               Min="1" />
+                            </MudItem>
+
+                            <MudItem xs="12" md="6">
+                                <MudNumericField @bind-Value="_product.AvailableStock"
+                                               Label="Available Stock"
+                                               Required="true"
+                                               RequiredError="Stock quantity is required"
+                                               Min="0" />
+                            </MudItem>
+
+                            <MudItem xs="12" md="6">
+                                <MudNumericField @bind-Value="_product.BulkDiscountThreshold"
+                                               Label="Bulk Discount Threshold"
+                                               Min="0" />
+                            </MudItem>
+
+                            <MudItem xs="12" md="6">
+                                <MudNumericField @bind-Value="_product.BulkDiscountPercentage"
+                                               Label="Bulk Discount %"
+                                               Min="0"
+                                               Max="100" />
+                            </MudItem>
+                        </MudGrid>
+                    </MudTabPanel>
+
+                    <!-- Halal Certification Tab -->
+                    <MudTabPanel Text="Halal Certification">
+                        <MudGrid>
+                            <MudItem xs="12">
+                                <MudCheckBox @bind-Checked="_product.IsHalal"
+                                           Label="This product is Halal certified"
+                                           Color="Color.Primary" />
+                            </MudItem>
+
+                            @if (_product.IsHalal)
+                            {
+                                <MudItem xs="12">
+                                    <MudTextField @bind-Value="_product.HalalCertification"
+                                                Label="Certification Number"
+                                                Required="true"
+                                                RequiredError="Certification number is required" />
+                                </MudItem>
+
+                                <MudItem xs="12">
+                                    <MudDatePicker @bind-Date="_certificationExpiry"
+                                                 Label="Certification Expiry"
+                                                 Required="true"
+                                                 RequiredError="Expiry date is required" />
+                                </MudItem>
+
+                                <MudItem xs="12">
+                                    <MudTextField @bind-Value="_certificationAuthority"
+                                                Label="Certifying Authority"
+                                                Required="true"
+                                                RequiredError="Certifying authority is required" />
+                                </MudItem>
+                            }
+                        </MudGrid>
+                    </MudTabPanel>
+
+                    <!-- Additional Info Tab -->
+                    <MudTabPanel Text="Additional Info">
+                        <MudGrid>
+                            <MudItem xs="12">
+                                <MudTextField @bind-Value="_product.ManufacturingLocation"
+                                            Label="Manufacturing Location" />
+                            </MudItem>
+
+                            <MudItem xs="12" md="6">
+                                <MudDatePicker @bind-Date="_product.ExpiryDate"
+                                             Label="Expiry Date"
+                                             Required="true"
+                                             RequiredError="Expiry date is required" />
+                            </MudItem>
+
+                            <MudItem xs="12" md="6">
+                                <MudNumericField @bind-Value="_product.LeadTimeInDays"
+                                               Label="Lead Time (Days)"
+                                               Required="true"
+                                               RequiredError="Lead time is required"
+                                               Min="1" />
+                            </MudItem>
+                        </MudGrid>
+                    </MudTabPanel>
+                </MudTabs>
+            </MudForm>
+        </MudContainer>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit" Disabled="!_isValid || _processing">
+            @if (_processing)
+            {
+                <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                <MudText Class="ms-2">Processing</MudText>
+            }
+            else
+            {
+                <MudText>Save Changes</MudText>
+            }
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public VendorProduct Product { get; set; } = null!;
+
+    private MudForm _form = null!;
+    private bool _isValid;
+    private bool _processing;
+    private VendorProduct _product = new();
+    private string _certificationAuthority = "";
+    private DateTime? _certificationExpiry;
+
+    protected override void OnInitialized()
+    {
+        // Create a copy of the product for editing
+        _product = new VendorProduct
+        {
+            Id = Product.Id,
+            VendorId = Product.VendorId,
+            SKU = Product.SKU,
+            Name = Product.Name,
+            Description = Product.Description,
+            WholesalePrice = Product.WholesalePrice,
+            RetailPrice = Product.RetailPrice,
+            MinimumOrderQuantity = Product.MinimumOrderQuantity,
+            AvailableStock = Product.AvailableStock,
+            Category = Product.Category,
+            IsHalal = Product.IsHalal,
+            HalalCertification = Product.HalalCertification,
+            ManufacturingLocation = Product.ManufacturingLocation,
+            ExpiryDate = Product.ExpiryDate,
+            LeadTimeInDays = Product.LeadTimeInDays,
+            AutoApproveOrders = Product.AutoApproveOrders,
+            BulkDiscountThreshold = Product.BulkDiscountThreshold,
+            BulkDiscountPercentage = Product.BulkDiscountPercentage
+        };
+    }
+
+    private async Task Submit()
+    {
+        if (!_isValid) return;
+
+        try
+        {
+            _processing = true;
+
+            // Validate Halal certification if marked as Halal
+            if (_product.IsHalal)
+            {
+                var isValid = await QualityService.ValidateHalalCompliance(_product);
+                if (!isValid)
+                {
+                    Snackbar.Add("Invalid Halal certification", Severity.Error);
+                    return;
+                }
+            }
+
+            // Update product
+            var result = await VendorService.UpdateProduct(_product);
+            MudDialog.Close(DialogResult.Ok(result));
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error updating product: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _processing = false;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

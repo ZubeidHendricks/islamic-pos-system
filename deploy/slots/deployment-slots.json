@@ -1,0 +1,35 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "webAppName": {
+            "type": "string"
+        }
+    },
+    "variables": {
+        "stagingSlotName": "staging",
+        "uatSlotName": "uat"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Web/sites/slots",
+            "apiVersion": "2021-02-01",
+            "name": "[concat(parameters('webAppName'), '/', variables('stagingSlotName'))]",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "enabled": true,
+                "httpsOnly": true
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/slots",
+            "apiVersion": "2021-02-01",
+            "name": "[concat(parameters('webAppName'), '/', variables('uatSlotName'))]",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "enabled": true,
+                "httpsOnly": true
+            }
+        }
+    ]
+}

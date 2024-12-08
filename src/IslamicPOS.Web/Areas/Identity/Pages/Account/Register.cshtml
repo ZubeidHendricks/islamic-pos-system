@@ -1,0 +1,65 @@
+@page
+@model RegisterModel
+@{
+    ViewData["Title"] = "Register";
+}
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-4">
+    <MudText Typo="Typo.h4" Class="mb-4">@ViewData["Title"]</MudText>
+
+    <MudCard>
+        <MudForm Model="@Model" OnValidSubmit="Model.OnPostAsync">
+            <MudCardContent>
+                <MudTextField T="string"
+                            Label="First Name"
+                            @bind-Value="Model.Input.FirstName"
+                            Required="true"
+                            RequiredError="First name is required"
+                            Class="mb-3" />
+
+                <MudTextField T="string"
+                            Label="Last Name"
+                            @bind-Value="Model.Input.LastName"
+                            Required="true"
+                            RequiredError="Last name is required"
+                            Class="mb-3" />
+
+                <MudTextField T="string"
+                            Label="Email"
+                            @bind-Value="Model.Input.Email"
+                            Required="true"
+                            RequiredError="Email is required"
+                            Class="mb-3" />
+
+                <MudTextField T="string"
+                            Label="Password"
+                            @bind-Value="Model.Input.Password"
+                            Required="true"
+                            RequiredError="Password is required"
+                            InputType="InputType.Password"
+                            Class="mb-3" />
+
+                <MudTextField T="string"
+                            Label="Confirm Password"
+                            @bind-Value="Model.Input.ConfirmPassword"
+                            Required="true"
+                            RequiredError="Password confirmation is required"
+                            InputType="InputType.Password"
+                            Class="mb-3" />
+
+                <MudTextField T="string"
+                            Label="Organization"
+                            @bind-Value="Model.Input.Organization"
+                            Class="mb-3" />
+            </MudCardContent>
+
+            <MudCardActions>
+                <MudButton ButtonType="ButtonType.Submit"
+                          Variant="Variant.Filled"
+                          Color="Color.Primary"
+                          Size="Size.Large"
+                          FullWidth="true">Register</MudButton>
+            </MudCardActions>
+        </MudForm>
+    </MudCard>
+</MudContainer>

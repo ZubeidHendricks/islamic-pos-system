@@ -1,0 +1,54 @@
+@using IslamicPOS.Core.Models
+
+<MudDialog>
+    <DialogContent>
+        <MudGrid>
+            <MudItem xs="12">
+                <MudText>Current stock for @Product.Name: @Product.StockQuantity</MudText>
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudNumericField @bind-Value="_newQuantity"
+                               Label="New Stock Quantity"
+                               Required="true"
+                               Min="0"
+                               Class="mt-4" />
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudTextField @bind-Value="_notes"
+                            Label="Adjustment Notes"
+                            Required="true"
+                            Lines="3"
+                            Class="mt-4" />
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit">Update Stock</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public Product Product { get; set; } = null!;
+
+    private int _newQuantity;
+    private string _notes = "";
+
+    protected override void OnInitialized()
+    {
+        _newQuantity = Product.StockQuantity;
+    }
+
+    private void Submit()
+    {
+        if (string.IsNullOrWhiteSpace(_notes))
+            return;
+
+        MudDialog.Close(DialogResult.Ok(_newQuantity));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

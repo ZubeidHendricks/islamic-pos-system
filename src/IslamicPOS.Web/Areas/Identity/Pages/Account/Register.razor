@@ -1,0 +1,159 @@
+@page "/register"
+@using Microsoft.AspNetCore.Identity
+@using IslamicPOS.Core.Models
+@inject UserManager<ApplicationUser> UserManager
+@inject SignInManager<ApplicationUser> SignInManager
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+@attribute [Authorize(Roles = "Admin")]
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-16">
+    <MudCard>
+        <MudCardHeader>
+            <CardHeaderContent>
+                <MudText Typo="Typo.h5">Create New User</MudText>
+                <MudText Typo="Typo.body2">Add a new user to the system</MudText>
+            </CardHeaderContent>
+        </MudCardHeader>
+        <MudCardContent>
+            <MudForm @ref="_form" @bind-IsValid="@_isValid">
+                <MudTextField T="string"
+                            @bind-Value="_model.FirstName"
+                            Label="First Name"
+                            Required="true"
+                            RequiredError="First name is required" />
+
+                <MudTextField T="string"
+                            @bind-Value="_model.LastName"
+                            Label="Last Name"
+                            Required="true"
+                            RequiredError="Last name is required"
+                            Class="mt-3" />
+
+                <MudTextField T="string"
+                            @bind-Value="_model.Email"
+                            Label="Email"
+                            Required="true"
+                            RequiredError="Email is required"
+                            Validation="@(new EmailAddressAttribute() { ErrorMessage = "Invalid email address" })"
+                            InputType="InputType.Email"
+                            Class="mt-3" />
+
+                <MudSelect T="string" Label="Role"
+                          @bind-Value="_model.Role"
+                          Required="true"
+                          RequiredError="Role is required"
+                          Class="mt-3">
+                    <MudSelectItem Value="@("Manager")">Manager</MudSelectItem>
+                    <MudSelectItem Value="@("Cashier")">Cashier</MudSelectItem>
+                </MudSelect>
+
+                <MudTextField T="string"
+                            @bind-Value="_model.Password"
+                            Label="Password"
+                            Required="true"
+                            RequiredError="Password is required"
+                            InputType="InputType.Password"
+                            Class="mt-3" />
+
+                <MudTextField T="string"
+                            @bind-Value="_model.ConfirmPassword"
+                            Label="Confirm Password"
+                            Required="true"
+                            RequiredError="Password confirmation is required"
+                            InputType="InputType.Password"
+                            Validation="@(new Func<string, IEnumerable<string>>(ValidateConfirmPassword))"
+                            Class="mt-3" />
+            </MudForm>
+
+            @if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <MudAlert Severity="Severity.Error" Class="mt-3">@_errorMessage</MudAlert>
+            }
+        </MudCardContent>
+        <MudCardActions>
+            <MudButton Variant="Variant.Filled"
+                      Color="Color.Primary"
+                      Size="Size.Large"
+                      FullWidth="true"
+                      OnClick="HandleRegister"
+                      Disabled="!_isValid || _processing">
+                @if (_processing)
+                {
+                    <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                    <MudText Class="ms-2">Processing</MudText>
+                }
+                else
+                {
+                    <MudText>Create User</MudText>
+                }
+            </MudButton>
+        </MudCardActions>
+    </MudCard>
+</MudContainer>
+
+@code {
+    private MudForm _form;
+    private bool _isValid;
+    private bool _processing;
+    private string _errorMessage;
+    private RegisterModel _model = new();
+
+    private IEnumerable<string> ValidateConfirmPassword(string confirmPassword)
+    {
+        if (confirmPassword != _model.Password)
+            yield return "Passwords do not match";
+    }
+
+    private async Task HandleRegister()
+    {
+        await _form.Validate();
+        if (!_isValid) return;
+
+        try
+        {
+            _processing = true;
+            _errorMessage = string.Empty;
+
+            var user = new ApplicationUser
+            {
+                UserName = _model.Email,
+                Email = _model.Email,
+                FirstName = _model.FirstName,
+                LastName = _model.LastName,
+                EmailConfirmed = true // Since this is admin-created
+            };
+
+            var result = await UserManager.CreateAsync(user, _model.Password);
+
+            if (result.Succeeded)
+            {
+                await UserManager.AddToRoleAsync(user, _model.Role);
+                Snackbar.Add("User created successfully", Severity.Success);
+                NavigationManager.NavigateTo("/users");
+            }
+            else
+            {
+                _errorMessage = string.Join("\n", result.Errors.Select(e => e.Description));
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = "An error occurred while creating the user.";
+        }
+        finally
+        {
+            _processing = false;
+        }
+    }
+
+    private class RegisterModel
+    {
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string Role { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+        public string ConfirmPassword { get; set; } = string.Empty;
+    }
+}

@@ -1,0 +1,110 @@
+@using IslamicPOS.Core.Models
+
+<MudPaper Class="pa-4" Style="height: 100%;">
+    <MudText Typo="Typo.h5" Class="mb-4">Shopping Cart</MudText>
+
+    @if (!Items.Any())
+    {
+        <MudText Class="mud-text-secondary">Cart is empty</MudText>
+    }
+    else
+    {
+        <div class="d-flex flex-column gap-2" style="max-height: 400px; overflow-y: auto;">
+            @foreach (var item in Items)
+            {
+                <MudPaper Class="pa-3">
+                    <div class="d-flex justify-space-between align-center">
+                        <div>
+                            <MudText>@item.ProductName</MudText>
+                            <MudText Typo="Typo.body2">@item.UnitPrice.ToString("C")</MudText>
+                        </div>
+                        <div class="d-flex align-center">
+                            <MudIconButton Icon="@Icons.Material.Filled.Remove"
+                                         Size="Size.Small"
+                                         OnClick="() => UpdateQuantity(item, -1)" />
+                            <MudText Class="mx-2">@item.Quantity</MudText>
+                            <MudIconButton Icon="@Icons.Material.Filled.Add"
+                                         Size="Size.Small"
+                                         OnClick="() => UpdateQuantity(item, 1)" />
+                        </div>
+                        <MudText>@item.Subtotal.ToString("C")</MudText>
+                    </div>
+                </MudPaper>
+            }
+        </div>
+
+        <MudDivider Class="my-4" />
+
+        <div class="d-flex flex-column gap-2">
+            <div class="d-flex justify-space-between">
+                <MudText Typo="Typo.h6">Subtotal:</MudText>
+                <MudText Typo="Typo.h6">@Subtotal.ToString("C")</MudText>
+            </div>
+            <div class="d-flex justify-space-between">
+                <MudText Typo="Typo.h6">Tax:</MudText>
+                <MudText Typo="Typo.h6">@Tax.ToString("C")</MudText>
+            </div>
+            <div class="d-flex justify-space-between">
+                <MudText Typo="Typo.h6">Total:</MudText>
+                <MudText Typo="Typo.h6" Color="Color.Primary">@Total.ToString("C")</MudText>
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <MudSelect T="string" Label="Payment Method" @bind-Value="_selectedPaymentMethod">
+                <MudSelectItem Value="@("Cash")">Cash</MudSelectItem>
+                <MudSelectItem Value="@("Card")">Card</MudSelectItem>
+                <MudSelectItem Value="@("BankTransfer")">Bank Transfer</MudSelectItem>
+                <MudSelectItem Value="@("DigitalWallet")">Digital Wallet</MudSelectItem>
+            </MudSelect>
+
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       FullWidth="true"
+                       OnClick="CompleteTransaction"
+                       Class="mt-4">Complete Sale</MudButton>
+
+            <MudButton Variant="Variant.Outlined"
+                       Color="Color.Error"
+                       FullWidth="true"
+                       OnClick="ClearCart"
+                       Class="mt-2">Clear Cart</MudButton>
+        </div>
+    }
+</MudPaper>
+
+@code {
+    [Parameter] public List<TransactionItem> Items { get; set; } = new();
+    [Parameter] public EventCallback<TransactionItem> OnItemUpdated { get; set; }
+    [Parameter] public EventCallback OnTransactionCompleted { get; set; }
+    [Parameter] public EventCallback OnCartCleared { get; set; }
+
+    private string _selectedPaymentMethod = "Cash";
+
+    public decimal Subtotal => Items.Sum(i => i.Subtotal);
+    public decimal Tax => Math.Round(Subtotal * 0.15m, 2); // 15% tax
+    public decimal Total => Subtotal + Tax;
+
+    private async Task UpdateQuantity(TransactionItem item, int change)
+    {
+        var newQuantity = item.Quantity + change;
+        if (newQuantity >= 0)
+        {
+            item.Quantity = newQuantity;
+            await OnItemUpdated.InvokeAsync(item);
+        }
+    }
+
+    private async Task CompleteTransaction()
+    {
+        if (!Items.Any()) return;
+
+        // TODO: Process payment and create transaction
+        await OnTransactionCompleted.InvokeAsync();
+    }
+
+    private async Task ClearCart()
+    {
+        await OnCartCleared.InvokeAsync();
+    }
+}

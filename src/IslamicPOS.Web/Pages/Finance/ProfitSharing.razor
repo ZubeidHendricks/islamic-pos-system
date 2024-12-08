@@ -1,0 +1,189 @@
+@page "/profit-sharing"
+@using IslamicPOS.Core.Services
+@using IslamicPOS.Core.Services.IslamicFinance
+@using IslamicPOS.Core.Models.IslamicFinance
+@inject ITransactionService TransactionService
+@inject ISnackbar Snackbar
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-6">
+        <!-- Mudarabah Calculator -->
+        <MudTabPanel Text="Mudarabah">
+            <MudGrid>
+                <MudItem xs="12" md="6">
+                    <MudPaper Class="pa-4">
+                        <MudText Typo="Typo.h5" Class="mb-4">Mudarabah Profit Calculator</MudText>
+                        <MudForm @ref="_mudarabahForm" @bind-IsValid="@_mudarabahValid">
+                            <MudGrid>
+                                <MudItem xs="12">
+                                    <MudNumericField T="decimal"
+                                                   @bind-Value="_mudarabahInput.Capital"
+                                                   Label="Capital Amount"
+                                                   Format="C"
+                                                   Required="true"
+                                                   RequiredError="Capital amount is required"
+                                                   Min="0"
+                                                   AdornmentIcon="@Icons.Material.Filled.Money"
+                                                   Adornment="Adornment.Start" />
+                                </MudItem>
+
+                                <MudItem xs="12">
+                                    <MudNumericField T="decimal"
+                                                   @bind-Value="_mudarabahInput.TotalProfit"
+                                                   Label="Total Profit"
+                                                   Format="C"
+                                                   Required="true"
+                                                   RequiredError="Total profit is required"
+                                                   Min="0"
+                                                   AdornmentIcon="@Icons.Material.Filled.TrendingUp"
+                                                   Adornment="Adornment.Start" />
+                                </MudItem>
+
+                                <MudItem xs="12">
+                                    <MudText>Profit Sharing Ratio</MudText>
+                                    <MudGrid>
+                                        <MudItem xs="6">
+                                            <MudNumericField T="decimal"
+                                                           @bind-Value="_mudarabahInput.RabAlMalShare"
+                                                           Label="Rab al-Mal (Capital Provider)"
+                                                           Required="true"
+                                                           RequiredError="Share percentage is required"
+                                                           Min="0"
+                                                           Max="100"
+                                                           Immediate="true"
+                                                           Format="N1"
+                                                           AdornmentText="%"
+                                                           Adornment="Adornment.End"
+                                                           OnBlur="ValidateMudarabahShares" />
+                                        </MudItem>
+                                        <MudItem xs="6">
+                                            <MudNumericField T="decimal"
+                                                           @bind-Value="_mudarabahInput.MudaribShare"
+                                                           Label="Mudarib (Manager)"
+                                                           Required="true"
+                                                           RequiredError="Share percentage is required"
+                                                           Min="0"
+                                                           Max="100"
+                                                           Immediate="true"
+                                                           Format="N1"
+                                                           AdornmentText="%"
+                                                           Adornment="Adornment.End"
+                                                           OnBlur="ValidateMudarabahShares" />
+                                        </MudItem>
+                                    </MudGrid>
+                                </MudItem>
+
+                                <MudItem xs="12" Class="d-flex justify-center mt-4">
+                                    <MudButton Variant="Variant.Filled"
+                                              Color="Color.Primary"
+                                              Size="Size.Large"
+                                              OnClick="CalculateMudarabah"
+                                              Disabled="!_mudarabahValid">Calculate</MudButton>
+                                </MudItem>
+                            </MudGrid>
+                        </MudForm>
+                    </MudPaper>
+                </MudItem>
+
+                <!-- Results -->
+                <MudItem xs="12" md="6">
+                    @if (_mudarabahResult != null)
+                    {
+                        <MudPaper Class="pa-4">
+                            <MudText Typo="Typo.h5" Class="mb-4">Profit Distribution</MudText>
+
+                            <MudGrid>
+                                <MudItem xs="12">
+                                    <MudText><strong>Total Investment:</strong> @_mudarabahResult.Capital.ToString("C")</MudText>
+                                    <MudText><strong>Total Profit:</strong> @_mudarabahResult.TotalProfit.ToString("C")</MudText>
+                                    <MudText><strong>Return on Investment:</strong> @_mudarabahResult.ReturnOnInvestment.ToString("N1")%</MudText>
+                                </MudItem>
+
+                                <MudItem xs="12">
+                                    <MudDivider Class="my-4" />
+                                </MudItem>
+
+                                <MudItem xs="12">
+                                    <MudText><strong>Rab al-Mal Share (@_mudarabahResult.RabAlMalShare.ToString("N1")%):</strong></MudText>
+                                    <MudText Typo="Typo.h6" Color="Color.Primary">@_mudarabahResult.RabAlMalAmount.ToString("C")</MudText>
+                                </MudItem>
+
+                                <MudItem xs="12">
+                                    <MudText><strong>Mudarib Share (@_mudarabahResult.MudaribShare.ToString("N1")%):</strong></MudText>
+                                    <MudText Typo="Typo.h6" Color="Color.Secondary">@_mudarabahResult.MudaribAmount.ToString("C")</MudText>
+                                </MudItem>
+
+                                <MudItem xs="12">
+                                    <MudButton Variant="Variant.Outlined"
+                                              Color="Color.Primary"
+                                              FullWidth="true"
+                                              OnClick="GenerateMudarabahReport"
+                                              Class="mt-4">Generate Report</MudButton>
+                                </MudItem>
+                            </MudGrid>
+                        </MudPaper>
+                    }
+                </MudItem>
+            </MudGrid>
+        </MudTabPanel>
+
+        <!-- Musharaka Calculator -->
+        <MudTabPanel Text="Musharaka">
+            <!-- Coming Soon Text -->
+            <div class="d-flex align-center justify-center" style="height: 400px;">
+                <div class="text-center">
+                    <MudIcon Icon="@Icons.Material.Filled.Construction" Size="Size.Large" />
+                    <MudText Typo="Typo.h5" Class="mt-4">Coming Soon</MudText>
+                    <MudText Class="mt-2">Musharaka profit sharing calculator is under development.</MudText>
+                </div>
+            </div>
+        </MudTabPanel>
+    </MudTabs>
+</MudContainer>
+
+@code {
+    private MudForm _mudarabahForm;
+    private bool _mudarabahValid;
+    private MudarabahCalculator _calculator = new();
+    private MudarabahInput _mudarabahInput = new();
+    private MudarabahResult _mudarabahResult;
+
+    private async Task ValidateMudarabahShares()
+    {
+        if (_mudarabahInput.RabAlMalShare + _mudarabahInput.MudaribShare != 100)
+        {
+            Snackbar.Add("Profit sharing percentages must total 100%", Severity.Warning);
+            _mudarabahValid = false;
+        }
+    }
+
+    private async Task CalculateMudarabah()
+    {
+        try
+        {
+            _mudarabahResult = _calculator.CalculateProfit(
+                _mudarabahInput.Capital,
+                _mudarabahInput.TotalProfit,
+                _mudarabahInput.RabAlMalShare,
+                _mudarabahInput.MudaribShare);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Error calculating profit distribution: " + ex.Message, Severity.Error);
+        }
+    }
+
+    private async Task GenerateMudarabahReport()
+    {
+        // TODO: Implement report generation
+        Snackbar.Add("Report generation will be implemented soon", Severity.Info);
+    }
+
+    private class MudarabahInput
+    {
+        public decimal Capital { get; set; }
+        public decimal TotalProfit { get; set; }
+        public decimal RabAlMalShare { get; set; } = 60; // Default values
+        public decimal MudaribShare { get; set; } = 40;
+    }
+}

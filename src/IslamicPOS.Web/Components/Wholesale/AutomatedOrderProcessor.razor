@@ -1,0 +1,306 @@
+@using IslamicPOS.Core.Models.Wholesale
+@using IslamicPOS.Core.Services.Wholesale
+@inject IDistributionPlanningService DistributionService
+@inject IQualityControlService QualityService
+@inject ISnackbar Snackbar
+
+<MudContainer>
+    <MudPaper Class="pa-4">
+        <MudGrid>
+            <!-- Status Summary -->
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Class="pa-4" Elevation="2">
+                    <MudStack>
+                        <MudIcon Icon="@Icons.Material.Filled.Assignment" Color="Color.Primary" Size="Size.Large" />
+                        <MudText Typo="Typo.h5">@_pendingOrders.Count</MudText>
+                        <MudText>Pending Orders</MudText>
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Class="pa-4" Elevation="2">
+                    <MudStack>
+                        <MudIcon Icon="@Icons.Material.Filled.LocalShipping" Color="Color.Info" Size="Size.Large" />
+                        <MudText Typo="Typo.h5">@_inProcessOrders.Count</MudText>
+                        <MudText>In Process</MudText>
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Class="pa-4" Elevation="2">
+                    <MudStack>
+                        <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Large" />
+                        <MudText Typo="Typo.h5">@_completedToday</MudText>
+                        <MudText>Completed Today</MudText>
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Class="pa-4" Elevation="2">
+                    <MudStack>
+                        <MudIcon Icon="@Icons.Material.Filled.Speed" Color="Color.Warning" Size="Size.Large" />
+                        <MudText Typo="Typo.h5">@_averageProcessingTime.ToString("N1")</MudText>
+                        <MudText>Avg Processing Time (hrs)</MudText>
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+
+            <!-- Active Orders Table -->
+            <MudItem xs="12">
+                <MudTable Items="@_activeOrders" Dense="true" Hover="true" Loading="_loading">
+                    <ToolBarContent>
+                        <MudText Typo="Typo.h6">Active Orders</MudText>
+                        <MudSpacer />
+                        <MudButton Variant="Variant.Filled" 
+                                  Color="Color.Primary"
+                                  OnClick="ProcessPendingOrders"
+                                  Disabled="_processing || !_pendingOrders.Any()">
+                            Process Pending Orders
+                        </MudButton>
+                    </ToolBarContent>
+
+                    <HeaderContent>
+                        <MudTh>Order #</MudTh>
+                        <MudTh>Vendor</MudTh>
+                        <MudTh>Products</MudTh>
+                        <MudTh>Auto-Approved</MudTh>
+                        <MudTh>Processing Stage</MudTh>
+                        <MudTh>Status</MudTh>
+                        <MudTh>Actions</MudTh>
+                    </HeaderContent>
+
+                    <RowTemplate>
+                        <MudTd DataLabel="Order #">@context.OrderNumber</MudTd>
+                        <MudTd DataLabel="Vendor">@context.VendorName</MudTd>
+                        <MudTd DataLabel="Products">@context.Items.Count items</MudTd>
+                        <MudTd DataLabel="Auto-Approved">
+                            @if (context.IsAutoApproved)
+                            {
+                                <MudChip Color="Color.Success" Size="Size.Small">Yes</MudChip>
+                            }
+                            else
+                            {
+                                <MudChip Color="Color.Warning" Size="Size.Small">No</MudChip>
+                            }
+                        </MudTd>
+                        <MudTd DataLabel="Processing Stage">
+                            <MudProgressLinear Value="GetProcessingProgress(context)" 
+                                              Color="GetProcessingColor(context)"
+                                              Class="my-2">
+                                <MudText Typo="Typo.caption">@GetProcessingStage(context)</MudText>
+                            </MudProgressLinear>
+                        </MudTd>
+                        <MudTd DataLabel="Status">
+                            <MudChip Color="@GetStatusColor(context.Status)" Size="Size.Small">
+                                @context.Status
+                            </MudChip>
+                        </MudTd>
+                        <MudTd>
+                            <MudButtonGroup Size="Size.Small" Variant="Variant.Text">
+                                <MudIconButton Icon="@Icons.Material.Filled.Visibility"
+                                             OnClick="() => ViewOrderDetails(context)" />
+                                @if (context.RequiresAction)
+                                {
+                                    <MudIconButton Icon="@Icons.Material.Filled.PlayArrow"
+                                                 Color="Color.Success"
+                                                 OnClick="() => ResumeProcessing(context)" />
+                                }
+                                @if (context.CanBePaused)
+                                {
+                                    <MudIconButton Icon="@Icons.Material.Filled.Pause"
+                                                 Color="Color.Warning"
+                                                 OnClick="() => PauseProcessing(context)" />
+                                }
+                            </MudButtonGroup>
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            </MudItem>
+
+            <!-- Quality Control Issues -->
+            @if (_qualityIssues.Any())
+            {
+                <MudItem xs="12">
+                    <MudAlert Severity="Severity.Warning" Class="mt-4">
+                        <MudText>Quality Control Issues Requiring Attention</MudText>
+                        <MudList Dense="true">
+                            @foreach (var issue in _qualityIssues)
+                            {
+                                <MudListItem>
+                                    <MudText>@issue.Description</MudText>
+                                    <MudButton Size="Size.Small" 
+                                              OnClick="() => HandleQualityIssue(issue)"
+                                              Class="ml-4">Review</MudButton>
+                                </MudListItem>
+                            }
+                        </MudList>
+                    </MudAlert>
+                </MudItem>
+            }
+        </MudGrid>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private bool _loading = true;
+    private bool _processing;
+    private List<VendorOrder> _pendingOrders = new();
+    private List<VendorOrder> _inProcessOrders = new();
+    private List<VendorOrder> _activeOrders = new();
+    private List<QualityIssue> _qualityIssues = new();
+    private int _completedToday;
+    private double _averageProcessingTime;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadOrderData();
+        StartProcessingMonitor();
+    }
+
+    private async Task LoadOrderData()
+    {
+        try
+        {
+            _loading = true;
+            var today = DateTime.Today;
+
+            // Load orders in different states
+            _pendingOrders = await DistributionService.GetPendingOrders();
+            _inProcessOrders = await DistributionService.GetInProcessOrders();
+            _activeOrders = _pendingOrders.Concat(_inProcessOrders).ToList();
+
+            // Get today's statistics
+            _completedToday = await DistributionService.GetCompletedOrderCount(today);
+            _averageProcessingTime = await DistributionService.GetAverageProcessingTime(today);
+
+            // Load quality issues
+            _qualityIssues = await QualityService.GetOpenQualityIssues();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void StartProcessingMonitor()
+    {
+        // Set up SignalR connection for real-time updates
+        hubConnection.On<VendorOrder>("OrderStatusUpdated", order =>
+        {
+            UpdateOrderStatus(order);
+            StateHasChanged();
+        });
+    }
+
+    private async Task ProcessPendingOrders()
+    {
+        try
+        {
+            _processing = true;
+
+            foreach (var order in _pendingOrders)
+            {
+                // Check if order can be auto-approved
+                var vendorScore = await GetVendorScore(order.VendorId);
+                var canAutoApprove = await DistributionService.AutoApproveOrder(order, vendorScore);
+
+                if (canAutoApprove)
+                {
+                    // Generate distribution plan
+                    var plan = await DistributionService.GenerateDistributionPlan(
+                        order.Items.Select(i => i.Product).ToList(),
+                        vendorScore);
+
+                    // Start processing
+                    await DistributionService.StartOrderProcessing(order.Id, plan);
+                }
+                else
+                {
+                    // Mark for manual review
+                    await DistributionService.MarkForManualReview(order.Id);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error processing orders: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _processing = false;
+            await LoadOrderData();
+        }
+    }
+
+    private double GetProcessingProgress(VendorOrder order)
+    {
+        return order.ProcessingStages.Count > 0
+            ? (order.CompletedStages * 100.0) / order.ProcessingStages.Count
+            : 0;
+    }
+
+    private string GetProcessingStage(VendorOrder order)
+    {
+        return order.CurrentStage?.Name ?? "Not Started";
+    }
+
+    private Color GetProcessingColor(VendorOrder order)
+    {
+        if (order.HasIssues) return Color.Error;
+        if (order.IsPaused) return Color.Warning;
+        return Color.Info;
+    }
+
+    private Color GetStatusColor(string status) => status switch
+    {
+        "Completed" => Color.Success,
+        "InProcess" => Color.Info,
+        "Paused" => Color.Warning,
+        "HasIssues" => Color.Error,
+        _ => Color.Default
+    };
+
+    private async Task ViewOrderDetails(VendorOrder order)
+    {
+        var parameters = new DialogParameters
+        {
+            { "Order", order }
+        };
+
+        var dialog = await DialogService.ShowAsync<OrderProcessingDetailsDialog>(
+            "Order Processing Details", parameters);
+        await dialog.Result;
+    }
+
+    private async Task ResumeProcessing(VendorOrder order)
+    {
+        await DistributionService.ResumeOrderProcessing(order.Id);
+        await LoadOrderData();
+    }
+
+    private async Task PauseProcessing(VendorOrder order)
+    {
+        await DistributionService.PauseOrderProcessing(order.Id);
+        await LoadOrderData();
+    }
+
+    private async Task HandleQualityIssue(QualityIssue issue)
+    {
+        var parameters = new DialogParameters
+        {
+            { "Issue", issue }
+        };
+
+        var dialog = await DialogService.ShowAsync<QualityIssueDialog>(
+            "Quality Issue Review", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await LoadOrderData();
+        }
+    }
+}
