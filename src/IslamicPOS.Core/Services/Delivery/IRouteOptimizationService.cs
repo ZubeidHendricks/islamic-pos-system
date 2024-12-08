@@ -1,8 +1,10 @@
+using IslamicPOS.Core.Models.Logistics;
+
 namespace IslamicPOS.Core.Services.Delivery;
 
 public interface IRouteOptimizationService
 {
-    Task<OptimizedRoute> GenerateRouteAsync(List<DeliveryPoint> points, Vehicle vehicle);
-    Task<List<OptimizedRoute>> GenerateDailyRoutesAsync(DateTime date);
-    Task<bool> ValidateHalalRequirementsAsync(OptimizedRoute route);
+    Task<OptimizedRoute> OptimizeRouteAsync(List<DeliveryPoint> points, Vehicle vehicle);
+    Task<OptimizedRoute> ReoptimizeRouteAsync(OptimizedRoute currentRoute, List<DeliveryOrder> newOrders);
+    Task<DeliverySchedule> GenerateScheduleAsync(DateTime date, List<DeliveryOrder> orders);
 }
