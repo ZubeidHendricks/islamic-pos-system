@@ -1,34 +1,25 @@
-using IslamicPOS.Core.Barcoding.Interfaces;
-using IslamicPOS.Core.Loyalty.Interfaces;
-using IslamicPOS.Core.Subscription.Interfaces;
-using IslamicPOS.Core.Ticketing.Interfaces;
-using IslamicPOS.Core.Services;
-using IslamicPOS.Infrastructure.Services;
-using Microsoft.Extensions.DependencyInjection;
+namespace IslamicPOS.Infrastructure;
 
-namespace IslamicPOS.Infrastructure
+public static class DependencyInjection
 {
-    public static class DependencyInjection
+    public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
     {
-        public static IServiceCollection AddInfrastructureServices(this IServiceCollection services)
-        {
-            // Register Core Services
-            services.AddScoped<IZakaahCalculator, ZakaahCalculator>();
-            services.AddScoped<IProfitDistributionService, ProfitDistributionService>();
+        // Auth Services
+        services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<ITokenService, TokenService>();
 
-            // Register Barcode Service
-            services.AddScoped<IBarcodeService, BarcodeService>();
+        // Business Services
+        services.AddScoped<IProfitDistributionService, ProfitDistributionService>();
+        services.AddScoped<IPartnerService, PartnerService>();
+        services.AddScoped<IReportingService, ReportingService>();
+        services.AddScoped<IZakaahCalculator, ZakaahCalculator>();
 
-            // Register Ticketing Service
-            services.AddScoped<ITicketService, TicketService>();
+        // Existing Services
+        services.AddScoped<IBarcodeService, BarcodeService>();
+        services.AddScoped<ITicketService, TicketService>();
+        services.AddScoped<ILoyaltyService, LoyaltyService>();
+        services.AddScoped<ISubscriptionService, SubscriptionService>();
 
-            // Register Loyalty Service
-            services.AddScoped<ILoyaltyService, LoyaltyService>();
-
-            // Register Subscription Service
-            services.AddScoped<ISubscriptionService, SubscriptionService>();
-
-            return services;
-        }
+        return services;
     }
 }
