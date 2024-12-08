@@ -1,0 +1,76 @@
+name: Staged Deployment
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.0.x'
+    
+    - name: Restore
+      run: dotnet restore
+    
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
+    
+    - name: Test
+      run: dotnet test --no-restore --verbosity normal
+
+  deploy-staging:
+    needs: build-and-test
+    if: github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    environment: staging
+    
+    steps:
+    - name: Deploy to Staging
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: islamic-pos-web
+        slot-name: 'staging'
+        publish-profile: ${{ secrets.AZURE_WEBAPP_STAGING_PUBLISH_PROFILE }}
+        package: './web-publish'
+
+  deploy-uat:
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    environment: uat
+    
+    steps:
+    - name: Deploy to UAT
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: islamic-pos-web
+        slot-name: 'uat'
+        publish-profile: ${{ secrets.AZURE_WEBAPP_UAT_PUBLISH_PROFILE }}
+        package: './web-publish'
+
+  deploy-production:
+    needs: [deploy-staging, deploy-uat]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    
+    steps:
+    - name: Deploy to Production
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: islamic-pos-web
+        publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+        package: './web-publish'
+    
+    - name: Swap Staging Slot
+      uses: azure/CLI@v1
+      with:
+        inlineScript: |
+          az webapp deployment slot swap -g islamic-pos-rg -n islamic-pos-web --slot staging --target-slot production
