@@ -1,4 +1,4 @@
-name: Deploy to Azure
+name: Build and Deploy
 
 on:
   push:
@@ -18,14 +18,17 @@ jobs:
       with:
         dotnet-version: '8.0.x'
     
+    - name: List solution contents
+      run: ls -la
+    
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore IslamicPOS.sln
     
     - name: Build
-      run: dotnet build --configuration Release --no-restore
+      run: dotnet build IslamicPOS.sln --configuration Release --no-restore
     
     - name: Test
-      run: dotnet test --no-restore --verbosity normal
+      run: dotnet test IslamicPOS.sln --no-build --verbosity normal
     
     - name: Publish Web
       run: dotnet publish src/IslamicPOS.Web/IslamicPOS.Web.csproj -c Release -o web-publish
@@ -34,6 +37,7 @@ jobs:
       run: dotnet publish src/IslamicPOS.Server/IslamicPOS.Server.csproj -c Release -o api-publish
     
     - name: Deploy Web to Azure
+      if: github.ref == 'refs/heads/main'
       uses: azure/webapps-deploy@v2
       with:
         app-name: islamic-pos-web
@@ -41,6 +45,7 @@ jobs:
         package: './web-publish'
     
     - name: Deploy API to Azure
+      if: github.ref == 'refs/heads/main'
       uses: azure/webapps-deploy@v2
       with:
         app-name: islamic-pos-api
