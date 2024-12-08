@@ -1,0 +1,39 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "webAppName": {
+            "type": "string"
+        },
+        "customHostname": {
+            "type": "string"
+        },
+        "certificateName": {
+            "type": "string"
+        }
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Web/certificates",
+            "apiVersion": "2021-02-01",
+            "name": "[parameters('certificateName')]",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('webAppName'))]",
+                "canonicalName": "[parameters('customHostname')]"
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites/hostNameBindings",
+            "apiVersion": "2021-02-01",
+            "name": "[concat(parameters('webAppName'), '/', parameters('customHostname'))]",
+            "properties": {
+                "sslState": "SniEnabled",
+                "thumbprint": "[reference(resourceId('Microsoft.Web/certificates', parameters('certificateName'))).thumbprint]"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/certificates', parameters('certificateName'))]"
+            ]
+        }
+    ]
+}
