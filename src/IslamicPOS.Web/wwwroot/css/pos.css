@@ -1,0 +1,37 @@
+.pos-terminal {
+    height: calc(100vh - 64px);
+    padding: 1rem;
+    background-color: #f8f9fa;
+}
+
+.products-grid {
+    height: calc(100vh - 200px);
+    overflow-y: auto;
+}
+
+.cart-items {
+    height: calc(100vh - 500px);
+    overflow-y: auto;
+}
+
+.product-card {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.product-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.product-card.border-success {
+    border-width: 2px;
+}
+
+.cart-item {
+    transition: all 0.2s ease;
+}
+
+.cart-item:hover {
+    background-color: #f8f9fa;
+}

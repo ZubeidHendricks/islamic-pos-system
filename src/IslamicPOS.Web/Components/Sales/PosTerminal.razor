@@ -1,0 +1,306 @@
+using IslamicPOS.Application.Sales.Commands.CreateSale;
+using IslamicPOS.Domain.Sales;
+using IslamicPOS.Domain.ValueObjects;
+using MediatR;
+
+@inject IMediator Mediator
+@inject NavigationManager NavigationManager
+
+<div class="pos-terminal">
+    <div class="row h-100">
+        <div class="col-md-8">
+            <!-- Product Selection Area -->
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h4 class="mb-0">Products</h4>
+                        </div>
+                        <div class="col-auto">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="halalOnly" @bind="showHalalOnly">
+                                <label class="form-check-label text-white" for="halalOnly">Halal Only</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-body p-0">
+                    <div class="p-3 border-bottom">
+                        <div class="input-group">
+                            <input type="text" class="form-control" placeholder="Search products or scan barcode..." 
+                                   @bind="searchTerm" @bind:event="oninput" @onkeyup="HandleSearch" />
+                            <span class="input-group-text bg-white">
+                                <i class="bi bi-search"></i>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="products-grid p-3">
+                        <div class="row g-3">
+                            @foreach (var product in FilteredProducts)
+                            {
+                                <div class="col-md-4">
+                                    <div class="product-card card h-100 @(product.IsHalal ? "border-success" : "")" 
+                                         @onclick="() => AddToCart(product)">
+                                        <div class="card-body">
+                                            @if (product.IsHalal)
+                                            {
+                                                <span class="badge bg-success position-absolute top-0 end-0 m-2">
+                                                    Halal
+                                                </span>
+                                            }
+                                            <h5 class="card-title">@product.Name</h5>
+                                            <p class="card-text text-muted small">@product.SKU</p>
+                                            <div class="d-flex justify-content-between align-items-end">
+                                                <span class="fs-5 fw-bold text-primary">
+                                                    @product.Price.ToString("C2")
+                                                </span>
+                                                <span class="text-muted small">
+                                                    Stock: @product.StockLevel
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <!-- Cart Area -->
+            <div class="card h-100">
+                <div class="card-header bg-dark text-white">
+                    <h4 class="mb-0">Current Sale</h4>
+                </div>
+
+                <div class="card-body p-0">
+                    <div class="cart-items p-3">
+                        @if (!CartItems.Any())
+                        {
+                            <div class="text-center text-muted py-5">
+                                <i class="bi bi-cart3 fs-1"></i>
+                                <p class="mt-2">Cart is empty</p>
+                            </div>
+                        }
+                        else
+                        {
+                            @foreach (var item in CartItems)
+                            {
+                                <div class="cart-item mb-3 border-bottom pb-2">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h6 class="mb-0">@item.Product.Name</h6>
+                                            <small class="text-muted">@item.Product.SKU</small>
+                                        </div>
+                                        <div class="text-end">
+                                            <div class="fw-bold">@((item.Product.Price.Amount * item.Quantity).ToString("C2"))</div>
+                                            <small class="text-muted">@item.Product.Price.ToString("C2") × @item.Quantity</small>
+                                        </div>
+                                    </div>
+                                    <div class="mt-2 d-flex justify-content-between align-items-center">
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-outline-secondary" @onclick="() => UpdateQuantity(item, -1)">
+                                                <i class="bi bi-dash"></i>
+                                            </button>
+                                            <button class="btn btn-outline-secondary" disabled>
+                                                @item.Quantity
+                                            </button>
+                                            <button class="btn btn-outline-secondary" @onclick="() => UpdateQuantity(item, 1)">
+                                                <i class="bi bi-plus"></i>
+                                            </button>
+                                        </div>
+                                        <button class="btn btn-sm btn-outline-danger" @onclick="() => RemoveFromCart(item)">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+
+                    <div class="p-3 bg-light border-top">
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Subtotal</span>
+                                <span class="fw-bold">@CalculateSubtotal().ToString("C2")</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Tax (15%)</span>
+                                <span>@CalculateTax().ToString("C2")</span>
+                            </div>
+                            <div class="d-flex justify-content-between fs-5 fw-bold text-primary">
+                                <span>Total</span>
+                                <span>@CalculateTotal().ToString("C2")</span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Payment Method</label>
+                            <select class="form-select" @bind="selectedPaymentMethod">
+                                @foreach (var method in Enum.GetValues<PaymentMethod>())
+                                {
+                                    <option value="@method">@method.ToString()</option>
+                                }
+                            </select>
+                        </div>
+
+                        @if (selectedPaymentMethod == PaymentMethod.IslamicFinancing)
+                        {
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle me-2"></i>
+                                Islamic financing options will be presented after order confirmation.
+                            </div>
+                        }
+
+                        <div class="mb-3">
+                            <label class="form-label">Customer Information</label>
+                            <input type="text" class="form-control mb-2" placeholder="Customer Name"
+                                   @bind="customerName" />
+                            <input type="tel" class="form-control" placeholder="Phone Number"
+                                   @bind="customerPhone" />
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-primary btn-lg" @onclick="ProcessSale"
+                                    disabled="@(!CanCompleteSale)">
+                                <i class="bi bi-check2-circle me-2"></i>Complete Sale
+                            </button>
+                            <button class="btn btn-outline-secondary" @onclick="ClearCart"
+                                    disabled="@(!CartItems.Any())">
+                                <i class="bi bi-x-circle me-2"></i>Clear Cart
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string searchTerm = "";
+    private bool showHalalOnly;
+    private string customerName = "";
+    private string customerPhone = "";
+    private PaymentMethod selectedPaymentMethod = PaymentMethod.Cash;
+
+    private List<CartItem> CartItems { get; } = new();
+    private List<ProductViewModel> Products { get; set; } = new();
+
+    private IEnumerable<ProductViewModel> FilteredProducts =>
+        Products.Where(p => 
+            (!showHalalOnly || p.IsHalal) &&
+            (string.IsNullOrWhiteSpace(searchTerm) ||
+             p.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+             p.SKU.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)));
+
+    private bool CanCompleteSale =>
+        CartItems.Any() &&
+        !string.IsNullOrWhiteSpace(customerName) &&
+        !string.IsNullOrWhiteSpace(customerPhone);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadProducts();
+    }
+
+    private async Task LoadProducts()
+    {
+        // TODO: Load products from API
+        Products = new List<ProductViewModel>
+        {
+            new(1, "Halal Chicken", "SKU001", new Money(15.99m, "USD"), true, 100),
+            new(2, "Rice", "SKU002", new Money(5.99m, "USD"), true, 200),
+            new(3, "Cooking Oil", "SKU003", new Money(8.99m, "USD"), false, 150)
+        };
+    }
+
+    private void AddToCart(ProductViewModel product)
+    {
+        var item = CartItems.FirstOrDefault(i => i.Product.Id == product.Id);
+        if (item != null)
+        {
+            UpdateQuantity(item, 1);
+        }
+        else
+        {
+            CartItems.Add(new CartItem(product));
+        }
+    }
+
+    private void UpdateQuantity(CartItem item, int change)
+    {
+        var newQuantity = item.Quantity + change;
+        if (newQuantity > 0 && newQuantity <= item.Product.StockLevel)
+        {
+            item.Quantity = newQuantity;
+        }
+        else if (newQuantity <= 0)
+        {
+            RemoveFromCart(item);
+        }
+    }
+
+    private void RemoveFromCart(CartItem item)
+    {
+        CartItems.Remove(item);
+    }
+
+    private void ClearCart()
+    {
+        CartItems.Clear();
+    }
+
+    private decimal CalculateSubtotal() =>
+        CartItems.Sum(item => item.Product.Price.Amount * item.Quantity);
+
+    private decimal CalculateTax() =>
+        Math.Round(CalculateSubtotal() * 0.15m, 2);
+
+    private decimal CalculateTotal() =>
+        CalculateSubtotal() + CalculateTax();
+
+    private async Task ProcessSale()
+    {
+        var command = new CreateSaleCommand
+        {
+            CustomerName = customerName,
+            CustomerPhone = customerPhone,
+            PaymentMethod = selectedPaymentMethod,
+            Items = CartItems.Select(item => new SaleItemDto
+            {
+                ProductId = item.Product.Id,
+                Quantity = item.Quantity
+            }).ToList()
+        };
+
+        var result = await Mediator.Send(command);
+
+        if (result.IsSuccess)
+        {
+            NavigationManager.NavigateTo($"/sales/{result.Value}");
+        }
+        else
+        {
+            // TODO: Show error message
+        }
+    }
+
+    private record ProductViewModel(int Id, string Name, string SKU, Money Price, bool IsHalal, int StockLevel);
+
+    private class CartItem
+    {
+        public ProductViewModel Product { get; }
+        public int Quantity { get; set; }
+
+        public CartItem(ProductViewModel product)
+        {
+            Product = product;
+            Quantity = 1;
+        }
+    }
+}
