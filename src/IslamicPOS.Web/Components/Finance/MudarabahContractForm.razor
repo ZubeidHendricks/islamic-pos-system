@@ -1,0 +1,97 @@
+@using IslamicPOS.Application.Finance.Commands.CreateMudarabahContract
+@using MediatR
+@inject IMediator Mediator
+@inject NavigationManager NavigationManager
+
+<EditForm Model="@model" OnValidSubmit="@HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">New Mudarabah Contract</h3>
+        </div>
+        <div class="card-body">
+            <div class="mb-3">
+                <label for="contractNumber" class="form-label">Contract Number</label>
+                <InputText id="contractNumber" class="form-control" @bind-Value="model.ContractNumber" />
+                <ValidationMessage For="@(() => model.ContractNumber)" />
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="rabbulMaalId" class="form-label">Rabbul Maal ID</label>
+                    <InputText id="rabbulMaalId" class="form-control" @bind-Value="model.RabbulMaalId" />
+                    <ValidationMessage For="@(() => model.RabbulMaalId)" />
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label for="mudaribId" class="form-label">Mudarib ID</label>
+                    <InputText id="mudaribId" class="form-control" @bind-Value="model.MudaribId" />
+                    <ValidationMessage For="@(() => model.MudaribId)" />
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="investedAmount" class="form-label">Invested Amount</label>
+                    <InputNumber id="investedAmount" class="form-control" @bind-Value="model.InvestedAmount" />
+                    <ValidationMessage For="@(() => model.InvestedAmount)" />
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label for="currency" class="form-label">Currency</label>
+                    <InputSelect id="currency" class="form-control" @bind-Value="model.Currency">
+                        <option value="USD">USD</option>
+                        <option value="EUR">EUR</option>
+                        <option value="GBP">GBP</option>
+                    </InputSelect>
+                    <ValidationMessage For="@(() => model.Currency)" />
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="profitRatio" class="form-label">Profit Sharing Ratio (0.00 - 1.00)</label>
+                <InputNumber id="profitRatio" class="form-control" @bind-Value="model.ProfitSharingRatio" step="0.01" />
+                <ValidationMessage For="@(() => model.ProfitSharingRatio)" />
+            </div>
+
+            <div class="mb-3">
+                <label for="startDate" class="form-label">Start Date</label>
+                <InputDate id="startDate" class="form-control" @bind-Value="model.StartDate" />
+                <ValidationMessage For="@(() => model.StartDate)" />
+            </div>
+
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <button type="button" class="btn btn-secondary me-md-2" @onclick="Cancel">Cancel</button>
+                <button type="submit" class="btn btn-primary">Create Contract</button>
+            </div>
+        </div>
+    </div>
+</EditForm>
+
+@code {
+    private CreateMudarabahContractCommand model = new()
+    {
+        StartDate = DateTime.Today
+    };
+
+    private async Task HandleValidSubmit()
+    {
+        var result = await Mediator.Send(model);
+
+        if (result.IsSuccess)
+        {
+            NavigationManager.NavigateTo("/contracts");
+        }
+        else
+        {
+            // TODO: Show error message
+        }
+    }
+
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo("/contracts");
+    }
+}
