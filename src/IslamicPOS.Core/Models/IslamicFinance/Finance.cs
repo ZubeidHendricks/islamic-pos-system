@@ -1,78 +1,47 @@
-using IslamicPOS.Core.Models.Common;
-
-namespace IslamicPOS.Core.Models.IslamicFinance;
-
-public class MudarabahResult : Entity
+namespace IslamicPOS.Core.Models.IslamicFinance
 {
-    public decimal InvestmentAmount { get; set; }
-    public decimal ProfitShare { get; set; }
-    public decimal InvestorShare { get; set; }
-    public decimal MudaribShare { get; set; }
-    public decimal TotalReturn { get; set; }
-    public decimal ROI { get; set; }
-    public DateTime CalculationDate { get; set; }
-    public string? Notes { get; set; }
-}
+    public class MudarabahResult
+    {
+        public decimal InvestedCapital { get; set; }
+        public decimal Profit { get; set; }
+        public decimal RabbulMaalShare { get; set; }
+        public decimal MudaribShare { get; set; }
+        public decimal ProfitSharingRatio { get; set; }
+    }
 
-public class MusharakaResult : Entity
-{
-    public decimal TotalInvestment { get; set; }
-    public decimal Partner1Investment { get; set; }
-    public decimal Partner2Investment { get; set; }
-    public decimal ProfitSharingRatio1 { get; set; }
-    public decimal ProfitSharingRatio2 { get; set; }
-    public decimal Partner1Share { get; set; }
-    public decimal Partner2Share { get; set; }
-    public DateTime CalculationDate { get; set; }
-}
+    public class MusharakaResult
+    {
+        public decimal TotalCapital { get; set; }
+        public decimal TotalProfit { get; set; }
+        public List<PartnerShare> PartnerShares { get; set; } = new();
+    }
 
-public class Partner : Entity
-{
-    public string Name { get; set; } = string.Empty;
-    public string Email { get; set; } = string.Empty;
-    public string PhoneNumber { get; set; } = string.Empty;
-    public string Status { get; set; } = string.Empty;
-    public decimal SharePercentage { get; set; }
-    public DateTime JoinDate { get; set; }
-    public List<PartnerShare> Shares { get; set; } = new();
-}
+    public class PartnerShare
+    {
+        public string PartnerId { get; set; } = string.Empty;
+        public decimal InvestedAmount { get; set; }
+        public decimal SharePercentage { get; set; }
+        public decimal ProfitShare { get; set; }
+    }
 
-public class ProfitDistribution : Entity
-{
-    public DateTime DistributionDate { get; set; }
-    public decimal TotalProfit { get; set; }
-    public decimal ZakaatAmount { get; set; }
-    public decimal DistributableProfit { get; set; }
-    public List<PartnerShare> PartnerShares { get; set; } = new();
-    public string Status { get; set; } = string.Empty;
-    public string? Notes { get; set; }
-}
+    public class ZakaatInput
+    {
+        public decimal CashOnHand { get; set; }
+        public decimal BankBalance { get; set; }
+        public decimal GoldValue { get; set; }
+        public decimal SilverValue { get; set; }
+        public decimal StockValue { get; set; }
+        public decimal BusinessAssets { get; set; }
+        public decimal Debts { get; set; }
+        public decimal Investments { get; set; }
+    }
 
-public class PartnerShare : Entity
-{
-    public Guid ProfitDistributionId { get; set; }
-    public ProfitDistribution ProfitDistribution { get; set; } = null!;
-    public Guid PartnerId { get; set; }
-    public Partner Partner { get; set; } = null!;
-    public decimal SharePercentage { get; set; }
-    public decimal Amount { get; set; }
-    public string Status { get; set; } = string.Empty;
-    public DateTime? PaidDate { get; set; }
-}
-
-public class DistributionResult
-{
-    public bool Success { get; set; }
-    public ProfitDistribution Distribution { get; set; } = null!;
-    public string Message { get; set; } = string.Empty;
-    public List<string> Errors { get; set; } = new();
-}
-
-public class DistributionHistory : Entity
-{
-    public Guid ProfitDistributionId { get; set; }
-    public ProfitDistribution ProfitDistribution { get; set; } = null!;
-    public string Action { get; set; } = string.Empty;
-    public string Details { get; set; } = string.Empty;
-    public string Status { get; set; } = string.Empty;
+    public class ZakaatCalculation
+    {
+        public decimal TotalWealth { get; set; }
+        public decimal NisabThreshold { get; set; }
+        public decimal ZakaatAmount { get; set; }
+        public bool IsZakaatDue { get; set; }
+        public DateTime CalculationDate { get; set; }
+    }
 }
