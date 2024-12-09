@@ -11,11 +11,6 @@ namespace IslamicPOS.Domain.Common
             return left?.Equals(right!) != false;
         }
 
-        protected static bool NotEqualOperator(ValueObject left, ValueObject right)
-        {
-            return !EqualOperator(left, right);
-        }
-
         protected abstract IEnumerable<object> GetEqualityComponents();
 
         public override bool Equals(object? obj)
