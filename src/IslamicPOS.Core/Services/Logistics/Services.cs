@@ -10,11 +10,27 @@ namespace IslamicPOS.Core.Services.Logistics
         Task<OptimizedRoute> UpdateRoute(int routeId);
     }
 
-    public interface IVendorDeliveryService
+    public class OptimizedRoute
     {
-        Task<List<TimeWindow>> GetAvailableTimeSlots(DateTime date);
-        Task<bool> ReserveTimeSlot(DateTime date, TimeWindow slot);
-        Task<List<DeliveryPoint>> GetActiveDeliveryPoints();
+        public int Id { get; set; }
+        public List<DeliveryPoint> Points { get; set; } = new();
+        public decimal TotalDistance { get; set; }
+        public TimeSpan EstimatedDuration { get; set; }
+        public DateTime StartTime { get; set; }
+    }
+
+    public interface IDeliveryTrackingService
+    {
+        Task<DeliveryAlert> GetDeliveryAlert(int alertId);
+        Task<List<DeliveryAlert>> GetActiveAlerts();
+        Task<bool> MarkAlertAsResolved(int alertId);
+    }
+
+    public interface IDriverManagementService
+    {
+        Task<DriverSchedule> GetDriverSchedule(string driverId, DateTime date);
+        Task<DriverPerformance> GetDriverPerformance(string driverId);
+        Task<List<DriverAlert>> GetDriverAlerts(string driverId);
     }
 
     public interface IFleetManagementService
