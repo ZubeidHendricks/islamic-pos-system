@@ -10,7 +10,7 @@ namespace IslamicPOS.Application.Common.Interfaces
         DbSet<ProductCategory> Categories { get; }
         DbSet<MudarabahContract> MudarabahContracts { get; }
         DbSet<ZakaatCalculation> ZakaatCalculations { get; }
-        
+
         Task<int> SaveChangesAsync(CancellationToken cancellationToken);
     }
 }
