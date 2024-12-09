@@ -1,49 +1,23 @@
-using IslamicPOS.Core.Barcoding.Interfaces;
-using IslamicPOS.Core.Loyalty.Interfaces;
-using IslamicPOS.Core.Subscription.Interfaces;
-using IslamicPOS.Core.Ticketing.Interfaces;
-using IslamicPOS.Core.Services;
-using IslamicPOS.Core.Services.Auth;
-using IslamicPOS.Core.Services.Financial;
-using IslamicPOS.Core.Services.Reports;
-using IslamicPOS.Core.Logistics.Interfaces;
-using IslamicPOS.Infrastructure.Logistics.Services;
-using IslamicPOS.Infrastructure.Services;
-using Microsoft.Extensions.DependencyInjection;
+using IslamicPOS.Application.Common.Interfaces;
+using IslamicPOS.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
-namespace IslamicPOS.Infrastructure;
-
-public static class DependencyInjection
+namespace IslamicPOS.Infrastructure
 {
-    public static IServiceCollection AddInfrastructureServices(
-        this IServiceCollection services,
-        IConfiguration configuration)
+    public static class DependencyInjection
     {
-        // Logistics Services
-        services.AddScoped<IRouteOptimizationService, RouteOptimizationService>();
-        services.AddScoped<IVendorDeliveryService, VendorDeliveryService>();
+        public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
+        {
+            services.AddDbContext<ApplicationDbContext>(options =>
+                options.UseSqlServer(
+                    configuration.GetConnectionString("DefaultConnection"),
+                    b => b.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)));
 
-        // Auth Services
-        services.AddScoped<IAuthService, AuthService>();
-        services.AddScoped<ITokenService, TokenService>();
+            services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
 
-        // Core Business Services
-        services.AddScoped<IProfitDistributionService, ProfitDistributionService>();
-        services.AddScoped<IPartnerService, PartnerService>();
-        services.AddScoped<IReportingService, ReportingService>();
-        services.AddScoped<IZakaahCalculator, ZakaahCalculator>();
-
-        // Integration Services
-        services.AddScoped<IBarcodeService, BarcodeService>();
-        services.AddScoped<ITicketService, TicketService>();
-        services.AddScoped<ILoyaltyService, LoyaltyService>();
-        services.AddScoped<ISubscriptionService, SubscriptionService>();
-
-        // Configuration
-        services.Configure<JwtSettings>(configuration.GetSection("JWT"));
-        services.Configure<ZakaahSettings>(configuration.GetSection("ZakaahSettings"));
-
-        return services;
+            return services;
+        }
     }
 }
