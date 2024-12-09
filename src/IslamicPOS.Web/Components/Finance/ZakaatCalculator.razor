@@ -1,0 +1,176 @@
+@using IslamicPOS.Domain.Finance
+@using IslamicPOS.Domain.ValueObjects
+@inject IMediator Mediator
+
+<div class="card">
+    <div class="card-header bg-success text-white">
+        <h5 class="card-title mb-0">Zakaat Calculator</h5>
+    </div>
+
+    <div class="card-body">
+        <EditForm Model="@zakaatModel" OnValidSubmit="CalculateZakaat">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <!-- Cash and Bank Assets -->
+            <div class="section mb-4">
+                <h6 class="section-title">Cash & Bank Assets</h6>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Cash on Hand</label>
+                        <div class="input-group">
+                            <span class="input-group-text">@Currency</span>
+                            <InputNumber class="form-control" @bind-Value="zakaatModel.CashOnHand" />
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Bank Balance</label>
+                        <div class="input-group">
+                            <span class="input-group-text">@Currency</span>
+                            <InputNumber class="form-control" @bind-Value="zakaatModel.BankBalance" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Precious Metals -->
+            <div class="section mb-4">
+                <h6 class="section-title">Precious Metals</h6>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Gold Value</label>
+                        <div class="input-group">
+                            <span class="input-group-text">@Currency</span>
+                            <InputNumber class="form-control" @bind-Value="zakaatModel.GoldValue" />
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Silver Value</label>
+                        <div class="input-group">
+                            <span class="input-group-text">@Currency</span>
+                            <InputNumber class="form-control" @bind-Value="zakaatModel.SilverValue" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Business Assets -->
+            <div class="section mb-4">
+                <h6 class="section-title">Business Assets</h6>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Stock Value</label>
+                        <div class="input-group">
+                            <span class="input-group-text">@Currency</span>
+                            <InputNumber class="form-control" @bind-Value="zakaatModel.StockValue" />
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Other Business Assets</label>
+                        <div class="input-group">
+                            <span class="input-group-text">@Currency</span>
+                            <InputNumber class="form-control" @bind-Value="zakaatModel.BusinessAssets" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Investments and Debts -->
+            <div class="section mb-4">
+                <h6 class="section-title">Investments & Liabilities</h6>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Investments</label>
+                        <div class="input-group">
+                            <span class="input-group-text">@Currency</span>
+                            <InputNumber class="form-control" @bind-Value="zakaatModel.Investments" />
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Debts & Liabilities</label>
+                        <div class="input-group">
+                            <span class="input-group-text">@Currency</span>
+                            <InputNumber class="form-control" @bind-Value="zakaatModel.Debts" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-grid gap-2 col-md-6 mx-auto mt-4">
+                <button type="submit" class="btn btn-success btn-lg">
+                    Calculate Zakaat
+                </button>
+            </div>
+        </EditForm>
+
+        @if (calculationResult != null)
+        {
+            <div class="calculation-result mt-4">
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <h5 class="card-title text-success">Zakaat Calculation Results</h5>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="result-item">
+                                    <label>Total Wealth</label>
+                                    <h4 class="mb-0">@calculationResult.TotalWealth.ToString("C2")</h4>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="result-item">
+                                    <label>Nisab Threshold</label>
+                                    <h4 class="mb-0">@calculationResult.NisabThreshold.ToString("C2")</h4>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="alert @(calculationResult.IsZakaatDue ? "alert-success" : "alert-info") mt-3">
+                            @if (calculationResult.IsZakaatDue)
+                            {
+                                <h5 class="alert-heading">Zakaat Due: @calculationResult.ZakaatAmount.ToString("C2")</h5>
+                                <p class="mb-0">Your wealth has reached the Nisab threshold. The calculated Zakaat amount is payable.</p>
+                            }
+                            else
+                            {
+                                <h5 class="alert-heading">Zakaat Not Due</h5>
+                                <p class="mb-0">Your wealth has not reached the Nisab threshold. No Zakaat is payable at this time.</p>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Currency { get; set; } = "USD";
+
+    private ZakaatInput zakaatModel = new();
+    private ZakaatCalculation? calculationResult;
+
+    private async Task CalculateZakaat()
+    {
+        try
+        {
+            var command = new CalculateZakaatCommand
+            {
+                Input = zakaatModel
+            };
+
+            var result = await Mediator.Send(command);
+            if (result.IsSuccess)
+            {
+                calculationResult = result.Value;
+            }
+            else
+            {
+                // TODO: Show error message
+            }
+        }
+        catch (Exception ex)
+        {
+            // TODO: Handle error
+        }
+    }
+}
