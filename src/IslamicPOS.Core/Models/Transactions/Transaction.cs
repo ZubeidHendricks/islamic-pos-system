@@ -1,29 +1,42 @@
-using IslamicPOS.Core.Models.Common;
-using IslamicPOS.Core.Models.Products;
+using IslamicPOS.Core.Models.Inventory;
 
-namespace IslamicPOS.Core.Models.Transactions;
-
-public class Transaction : Entity
+namespace IslamicPOS.Core.Models.Transactions
 {
-    public string TransactionNumber { get; set; } = string.Empty;
-    public decimal TotalAmount { get; set; }
-    public string TransactionType { get; set; } = string.Empty;
-    public string Status { get; set; } = string.Empty;
-    public string UserId { get; set; } = string.Empty;
-    public List<TransactionItem> Items { get; set; } = new();
-    public string PaymentMethod { get; set; } = string.Empty;
-    public string? Notes { get; set; }
-}
+    public class Transaction
+    {
+        public int Id { get; set; }
+        public string TransactionNumber { get; set; } = string.Empty;
+        public DateTime TransactionDate { get; set; }
+        public decimal TotalAmount { get; set; }
+        public TransactionType Type { get; set; }
+        public PaymentMethod PaymentMethod { get; set; }
+        public string Notes { get; set; } = string.Empty;
+        public List<TransactionItem> Items { get; set; } = new();
+    }
 
-public class TransactionItem : Entity
-{
-    public Guid TransactionId { get; set; }
-    public Transaction Transaction { get; set; } = null!;
-    public Guid ProductId { get; set; }
-    public Product Product { get; set; } = null!;
-    public int Quantity { get; set; }
-    public decimal UnitPrice { get; set; }
-    public decimal Discount { get; set; }
-    public decimal Total { get; set; }
-    public string? Notes { get; set; }
+    public class TransactionItem
+    {
+        public int Id { get; set; }
+        public int ProductId { get; set; }
+        public Product Product { get; set; } = null!;
+        public int Quantity { get; set; }
+        public decimal UnitPrice { get; set; }
+        public decimal Subtotal { get; set; }
+    }
+
+    public enum TransactionType
+    {
+        Sale,
+        Purchase,
+        Return,
+        Adjustment
+    }
+
+    public enum PaymentMethod
+    {
+        Cash,
+        Card,
+        BankTransfer,
+        IslamicFinancing
+    }
 }
