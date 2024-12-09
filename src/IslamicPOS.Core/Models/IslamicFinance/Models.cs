@@ -44,4 +44,9 @@ namespace IslamicPOS.Core.Models.IslamicFinance
         public bool IsZakaatDue { get; set; }
         public DateTime CalculationDate { get; set; }
     }
+
+    public interface IZakaatService
+    {
+        ZakaatCalculation CalculateZakaat(ZakaatInput input);
+    }
 }

@@ -1,4 +1,4 @@
-namespace IslamicPOS.Core.Models.IslamicFinance
+namespace IslamicPOS.Core.Models.Islamic
 {
     public class MudarabahResult
     {

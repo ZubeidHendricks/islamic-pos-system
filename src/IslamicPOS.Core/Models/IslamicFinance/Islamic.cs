@@ -24,24 +24,8 @@ namespace IslamicPOS.Core.Models.IslamicFinance
         public decimal ProfitShare { get; set; }
     }
 
-    public class ZakaatInput
+    public interface IZakaatService
     {
-        public decimal CashOnHand { get; set; }
-        public decimal BankBalance { get; set; }
-        public decimal GoldValue { get; set; }
-        public decimal SilverValue { get; set; }
-        public decimal StockValue { get; set; }
-        public decimal BusinessAssets { get; set; }
-        public decimal Debts { get; set; }
-        public decimal Investments { get; set; }
-    }
-
-    public class ZakaatCalculation
-    {
-        public decimal TotalWealth { get; set; }
-        public decimal NisabThreshold { get; set; }
-        public decimal ZakaatAmount { get; set; }
-        public bool IsZakaatDue { get; set; }
-        public DateTime CalculationDate { get; set; }
+        ZakaatCalculation CalculateZakaat(ZakaatInput input);
     }
 }

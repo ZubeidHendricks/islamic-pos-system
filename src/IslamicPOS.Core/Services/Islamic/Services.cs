@@ -1,8 +1,13 @@
+using IslamicPOS.Core.Models.Islamic;
 using Microsoft.Extensions.Configuration;
-using IslamicPOS.Core.Models.IslamicFinance;
 
-namespace IslamicPOS.Core.Services.ZakaatCalculator
+namespace IslamicPOS.Core.Services.Islamic
 {
+    public interface IZakaatService
+    {
+        ZakaatCalculation CalculateZakaat(ZakaatInput input);
+    }
+
     public class ZakaatService : IZakaatService
     {
         private readonly decimal _nisabThreshold;
