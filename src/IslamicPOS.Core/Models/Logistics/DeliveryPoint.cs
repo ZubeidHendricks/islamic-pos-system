@@ -1,14 +1,12 @@
-using IslamicPOS.Core.Models.Common;
-
-namespace IslamicPOS.Core.Models.Logistics;
-
-public class DeliveryPoint : Entity
+namespace IslamicPOS.Core.Models.Logistics
 {
-    public string Name { get; set; } = string.Empty;
-    public string Address { get; set; } = string.Empty;
-    public double Latitude { get; set; }
-    public double Longitude { get; set; }
-    public string ContactName { get; set; } = string.Empty;
-    public string ContactPhone { get; set; } = string.Empty;
-    public string? Instructions { get; set; }
+    public class DeliveryPoint
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Address { get; set; } = string.Empty;
+        public decimal Latitude { get; set; }
+        public decimal Longitude { get; set; }
+        public TimeWindow DeliveryWindow { get; set; } = new();
+    }
 }
