@@ -1,0 +1,163 @@
+@using IslamicPOS.Domain.ValueObjects
+@using IslamicPOS.Domain.Finance
+@using IslamicPOS.Application.Finance.Commands.CreateMudarabahContract
+@inject IMediator Mediator
+
+<div class="modal @(IsVisible ? "show" : "")" tabindex="-1" style="display: @(IsVisible ? "block" : "none")">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Islamic Financing Options</h5>
+                <button type="button" class="btn-close btn-close-white" @onclick="OnClose"></button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="finance-options mb-4">
+                    <h6 class="mb-3">Select Financing Type</h6>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="card h-100 @(selectedType == FinancingType.Mudarabah ? "border-primary" : "")" 
+                                 @onclick="() => selectedType = FinancingType.Mudarabah">
+                                <div class="card-body">
+                                    <h6 class="card-title">Mudarabah Financing</h6>
+                                    <p class="card-text small text-muted">
+                                        A partnership where one party provides capital while the other provides expertise 
+                                        and management. Profits are shared according to an agreed-upon ratio.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card h-100 @(selectedType == FinancingType.Musharakah ? "border-primary" : "")" 
+                                 @onclick="() => selectedType = FinancingType.Musharakah">
+                                <div class="card-body">
+                                    <h6 class="card-title">Musharakah Financing</h6>
+                                    <p class="card-text small text-muted">
+                                        A partnership where all parties contribute capital and share in both profits and 
+                                        losses according to their investment ratios.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @if (selectedType == FinancingType.Mudarabah)
+                {
+                    <div class="mudarabah-form">
+                        <h6 class="mb-3">Mudarabah Details</h6>
+                        <EditForm Model="mudarabahModel" OnValidSubmit="ProcessMudarabah">
+                            <DataAnnotationsValidator />
+                            <ValidationSummary />
+
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Capital Provider (Rabbul Maal)</label>
+                                    <input type="text" class="form-control" @bind="mudarabahModel.RabbulMaalId" />
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label">Manager (Mudarib)</label>
+                                    <input type="text" class="form-control" @bind="mudarabahModel.MudaribId" />
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label">Investment Amount</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" @bind="mudarabahModel.InvestedAmount" 
+                                               min="0" step="0.01" />
+                                        <span class="input-group-text">@Currency</span>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label">Profit Sharing Ratio (%)</label>
+                                    <input type="number" class="form-control" 
+                                           @bind="profitSharingPercentage" min="0" max="100" step="1" />
+                                    <div class="form-text">
+                                        Rabbul Maal : Mudarib = @profitSharingPercentage : @(100 - profitSharingPercentage)
+                                    </div>
+                                </div>
+
+                                <div class="col-12">
+                                    <div class="alert alert-info">
+                                        <i class="bi bi-info-circle me-2"></i>
+                                        In Mudarabah, any financial losses are borne by the capital provider (Rabbul Maal), 
+                                        unless caused by misconduct or negligence of the manager (Mudarib).
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-4 text-end">
+                                <button type="button" class="btn btn-secondary me-2" @onclick="OnClose">Cancel</button>
+                                <button type="submit" class="btn btn-primary">Create Contract</button>
+                            </div>
+                        </EditForm>
+                    </div>
+                }
+                else if (selectedType == FinancingType.Musharakah)
+                {
+                    <div class="musharakah-form">
+                        <h6 class="mb-3">Musharakah Details</h6>
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i>
+                            Musharakah financing implementation coming soon.
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (IsVisible)
+{
+    <div class="modal-backdrop show"></div>
+}
+
+@code {
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public string Currency { get; set; } = "USD";
+    [Parameter] public decimal TotalAmount { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private FinancingType selectedType;
+    private CreateMudarabahContractCommand mudarabahModel = new();
+    private int profitSharingPercentage = 70; // Default 70:30 split
+
+    private enum FinancingType
+    {
+        Mudarabah,
+        Musharakah
+    }
+
+    protected override void OnParametersSet()
+    {
+        mudarabahModel.InvestedAmount = TotalAmount;
+        mudarabahModel.Currency = Currency;
+        mudarabahModel.ContractNumber = GenerateContractNumber();
+        mudarabahModel.StartDate = DateTime.Today;
+        base.OnParametersSet();
+    }
+
+    private async Task ProcessMudarabah()
+    {
+        mudarabahModel.ProfitSharingRatio = profitSharingPercentage / 100m;
+        
+        var result = await Mediator.Send(mudarabahModel);
+        if (result.IsSuccess)
+        {
+            await OnClose.InvokeAsync();
+        }
+        else
+        {
+            // TODO: Show error message
+        }
+    }
+
+    private string GenerateContractNumber()
+    {
+        return $"MDR-{DateTime.Now:yyyyMMdd}-{Guid.NewGuid().ToString()[..4].ToUpper()}";
+    }
+}

@@ -1,0 +1,24 @@
+.finance-options .card {
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-width: 2px;
+}
+
+.finance-options .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.finance-options .card.border-primary {
+    background-color: rgba(13, 110, 253, 0.05);
+}
+
+.modal-backdrop {
+    opacity: 0.5;
+}
+
+.validation-message {
+    color: #dc3545;
+    font-size: 0.875em;
+    margin-top: 0.25rem;
+}
