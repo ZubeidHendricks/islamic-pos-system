@@ -1,5 +1,7 @@
 using IslamicPOS.Application.Common.Interfaces;
+using IslamicPOS.Domain.Finance;
 using IslamicPOS.Infrastructure.Persistence;
+using IslamicPOS.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,6 +18,8 @@ namespace IslamicPOS.Infrastructure
                     b => b.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)));
 
             services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
+            services.AddScoped<IZakaatService, ZakaatService>();
+            services.AddScoped<IDateTimeService, DateTimeService>();
 
             return services;
         }
