@@ -1,255 +1,42 @@
 @page "/"
-@using IslamicPOS.Core.Services
-@using IslamicPOS.Core.Models
-@inject ITransactionService TransactionService
-@inject IInventoryManager InventoryManager
-@inject IZakaatService ZakaatService
 
-<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
-    <MudGrid>
-        <!-- Key Metrics -->
-        <MudItem xs="12" sm="6" md="3">
-            <MudPaper Class="pa-4" Elevation="2">
-                <MudStack>
-                    <MudIcon Icon="@Icons.Material.Filled.MonetizationOn" Color="Color.Success" Size="Size.Large" />
-                    <MudText Typo="Typo.h5">@_todaySales.ToString("C")</MudText>
-                    <MudText>Today's Sales</MudText>
-                </MudStack>
-            </MudPaper>
-        </MudItem>
+<PageTitle>Islamic POS System</PageTitle>
 
-        <MudItem xs="12" sm="6" md="3">
-            <MudPaper Class="pa-4" Elevation="2">
-                <MudStack>
-                    <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" Color="Color.Info" Size="Size.Large" />
-                    <MudText Typo="Typo.h5">@_todayTransactions</MudText>
-                    <MudText>Today's Transactions</MudText>
-                </MudStack>
-            </MudPaper>
-        </MudItem>
+<div class="container mt-4">
+    <div class="jumbotron">
+        <h1 class="display-4">Welcome to Islamic POS</h1>
+        <p class="lead">A comprehensive Point of Sale system designed to comply with Islamic financial principles.</p>
+        <hr class="my-4">
+        <p>Get started by navigating to the POS terminal or accessing Islamic finance tools.</p>
+    </div>
 
-        <MudItem xs="12" sm="6" md="3">
-            <MudPaper Class="pa-4" Elevation="2">
-                <MudStack>
-                    <MudIcon Icon="@Icons.Material.Filled.Inventory" Color="Color.Warning" Size="Size.Large" />
-                    <MudText Typo="Typo.h5">@_lowStockCount</MudText>
-                    <MudText>Low Stock Items</MudText>
-                </MudStack>
-            </MudPaper>
-        </MudItem>
-
-        <MudItem xs="12" sm="6" md="3">
-            <MudPaper Class="pa-4" Elevation="2">
-                <MudStack>
-                    <MudIcon Icon="@Icons.Material.Filled.Calculate" Color="Color.Primary" Size="Size.Large" />
-                    <MudText Typo="Typo.h5">@_inventoryValue.ToString("C")</MudText>
-                    <MudText>Inventory Value</MudText>
-                </MudStack>
-            </MudPaper>
-        </MudItem>
-
-        <!-- Sales Chart -->
-        <MudItem xs="12" md="8">
-            <MudPaper Class="pa-4">
-                <MudText Typo="Typo.h6" Class="mb-4">Sales Trend</MudText>
-                <MudChart ChartType="ChartType.Line"
-                         ChartSeries="@_salesSeries"
-                         XAxisLabels="@_salesLabels"
-                         Width="100%"
-                         Height="350px">
-                    <CustomGraphics>
-                        <MudChartLegend />
-                    </CustomGraphics>
-                </MudChart>
-            </MudPaper>
-        </MudItem>
-
-        <!-- Top Products -->
-        <MudItem xs="12" md="4">
-            <MudPaper Class="pa-4">
-                <MudText Typo="Typo.h6" Class="mb-4">Top Selling Products</MudText>
-                <MudList Dense="true">
-                    @foreach (var product in _topProducts)
-                    {
-                        <MudListItem>
-                            <div class="d-flex justify-space-between align-center">
-                                <div>
-                                    <MudText>@product.Name</MudText>
-                                    <MudText Typo="Typo.caption">@product.Category</MudText>
-                                </div>
-                                <div class="text-right">
-                                    <MudText>@product.SalesCount units</MudText>
-                                    <MudText Color="Color.Success">@product.Revenue.ToString("C")</MudText>
-                                </div>
-                            </div>
-                        </MudListItem>
-                    }
-                </MudList>
-            </MudPaper>
-        </MudItem>
-
-        <!-- Recent Transactions -->
-        <MudItem xs="12">
-            <MudPaper Class="pa-4">
-                <MudText Typo="Typo.h6" Class="mb-4">Recent Transactions</MudText>
-                <MudTable Items="@_recentTransactions" Dense="true" Hover="true" Loading="_loading">
-                    <HeaderContent>
-                        <MudTh>Transaction ID</MudTh>
-                        <MudTh>Time</MudTh>
-                        <MudTh>Items</MudTh>
-                        <MudTh>Payment Method</MudTh>
-                        <MudTh>Amount</MudTh>
-                        <MudTh>Status</MudTh>
-                        <MudTh></MudTh>
-                    </HeaderContent>
-                    <RowTemplate>
-                        <MudTd DataLabel="Transaction ID">@context.Id.ToString().Substring(0, 8)</MudTd>
-                        <MudTd DataLabel="Time">@context.Timestamp.ToString("HH:mm")</MudTd>
-                        <MudTd DataLabel="Items">@context.Items.Count items</MudTd>
-                        <MudTd DataLabel="Payment Method">
-                            <MudChip Size="Size.Small" Color="GetPaymentMethodColor(context.PaymentMethod)">
-                                @context.PaymentMethod
-                            </MudChip>
-                        </MudTd>
-                        <MudTd DataLabel="Amount">@context.TotalAmount.ToString("C")</MudTd>
-                        <MudTd DataLabel="Status">
-                            <MudChip Size="Size.Small" Color="GetStatusColor(context.Status)">
-                                @context.Status
-                            </MudChip>
-                        </MudTd>
-                        <MudTd>
-                            <MudIconButton Icon="@Icons.Material.Filled.Visibility"
-                                         Size="Size.Small"
-                                         OnClick="() => ViewTransaction(context)" />
-                        </MudTd>
-                    </RowTemplate>
-                    <PagerContent>
-                        <MudTablePager />
-                    </PagerContent>
-                </MudTable>
-            </MudPaper>
-        </MudItem>
-    </MudGrid>
-</MudContainer>
-
-@code {
-    private bool _loading = true;
-    private decimal _todaySales;
-    private int _todayTransactions;
-    private int _lowStockCount;
-    private decimal _inventoryValue;
-    private List<ChartSeries> _salesSeries = new();
-    private string[] _salesLabels;
-    private List<TopProductModel> _topProducts = new();
-    private List<Transaction> _recentTransactions = new();
-
-    protected override async Task OnInitializedAsync()
-    {
-        await LoadDashboardData();
-    }
-
-    private async Task LoadDashboardData()
-    {
-        try
-        {
-            _loading = true;
-
-            var today = DateTime.Today;
-            var startOfMonth = new DateTime(today.Year, today.Month, 1);
-            var endOfMonth = startOfMonth.AddMonths(1).AddDays(-1);
-
-            // Load metrics
-            var metricsTask = LoadMetrics(today);
-            var salesTrendTask = LoadSalesTrend(startOfMonth, endOfMonth);
-            var topProductsTask = LoadTopProducts(startOfMonth, endOfMonth);
-            var recentTransactionsTask = LoadRecentTransactions();
-            var inventoryTask = LoadInventoryMetrics();
-
-            await Task.WhenAll(
-                metricsTask,
-                salesTrendTask,
-                topProductsTask,
-                recentTransactionsTask,
-                inventoryTask
-            );
-        }
-        finally
-        {
-            _loading = false;
-        }
-    }
-
-    private async Task LoadMetrics(DateTime date)
-    {
-        var transactions = await TransactionService.GetDailyTransactions(date);
-        _todaySales = transactions.Sum(t => t.TotalAmount);
-        _todayTransactions = transactions.Count;
-    }
-
-    private async Task LoadSalesTrend(DateTime start, DateTime end)
-    {
-        var salesData = await TransactionService.GetSalesTrend(start, end);
-
-        _salesLabels = salesData.Select(d => d.Date.ToString("MMM dd")).ToArray();
-        _salesSeries = new List<ChartSeries>
-        {
-            new ChartSeries
-            {
-                Name = "Sales",
-                Data = salesData.Select(d => (double)d.Amount).ToArray()
-            }
-        };
-    }
-
-    private async Task LoadTopProducts(DateTime start, DateTime end)
-    {
-        _topProducts = await TransactionService.GetTopProducts(start, end, 5);
-    }
-
-    private async Task LoadRecentTransactions()
-    {
-        _recentTransactions = await TransactionService.GetRecentTransactions(10);
-    }
-
-    private async Task LoadInventoryMetrics()
-    {
-        _lowStockCount = (await InventoryManager.GetLowStockAlerts()).Count;
-        _inventoryValue = await InventoryManager.GetInventoryValue();
-    }
-
-    private Color GetPaymentMethodColor(string method) => method switch
-    {
-        "Cash" => Color.Success,
-        "Card" => Color.Primary,
-        "BankTransfer" => Color.Info,
-        "DigitalWallet" => Color.Secondary,
-        _ => Color.Default
-    };
-
-    private Color GetStatusColor(string status) => status switch
-    {
-        "Completed" => Color.Success,
-        "Pending" => Color.Warning,
-        "Cancelled" => Color.Error,
-        _ => Color.Default
-    };
-
-    private async Task ViewTransaction(Transaction transaction)
-    {
-        var parameters = new DialogParameters
-        {
-            { "Transaction", transaction }
-        };
-
-        var dialog = await DialogService.ShowAsync<TransactionDetailsDialog>("Transaction Details", parameters);
-        await dialog.Result;
-    }
-
-    private class TopProductModel
-    {
-        public string Name { get; set; }
-        public string Category { get; set; }
-        public int SalesCount { get; set; }
-        public decimal Revenue { get; set; }
-    }
-}
+    <div class="row mt-4">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Point of Sale</h5>
+                    <p class="card-text">Process sales and manage transactions in compliance with Islamic principles.</p>
+                    <a href="pos" class="btn btn-primary">Open POS</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Zakaat Calculator</h5>
+                    <p class="card-text">Calculate Zakaat obligations for your business assets.</p>
+                    <a href="finance/zakaat" class="btn btn-primary">Calculate Zakaat</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Islamic Contracts</h5>
+                    <p class="card-text">Manage Mudarabah and Musharakah contracts.</p>
+                    <a href="finance/contracts" class="btn btn-primary">View Contracts</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

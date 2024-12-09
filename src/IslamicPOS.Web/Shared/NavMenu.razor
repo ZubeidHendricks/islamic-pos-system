@@ -1,9 +1,54 @@
-<MudNavMenu>
-    <MudNavLink Href="" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard">Dashboard</MudNavLink>
-    <MudNavLink Href="pos" Icon="@Icons.Material.Filled.ShoppingCart">Point of Sale</MudNavLink>
-    <MudNavLink Href="inventory" Icon="@Icons.Material.Filled.Inventory">Inventory</MudNavLink>
-    <MudNavLink Href="zakaah" Icon="@Icons.Material.Filled.Calculate">Zakaah Calculator</MudNavLink>
-    <MudNavLink Href="profit-sharing" Icon="@Icons.Material.Filled.PieChart">Profit Sharing</MudNavLink>
-    <MudNavLink Href="reports" Icon="@Icons.Material.Filled.Assessment">Reports</MudNavLink>
-    <MudNavLink Href="settings" Icon="@Icons.Material.Filled.Settings">Settings</MudNavLink>
-</MudNavMenu>
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">Islamic POS</a>
+        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+    </div>
+</div>
+
+<div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
+    <nav class="flex-column">
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <span class="oi oi-home" aria-hidden="true"></span> Home
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="pos">
+                <span class="oi oi-cart" aria-hidden="true"></span> Point of Sale
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="finance/zakaat">
+                <span class="oi oi-calculator" aria-hidden="true"></span> Zakaat Calculator
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="finance/contracts">
+                <span class="oi oi-document" aria-hidden="true"></span> Islamic Contracts
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="inventory">
+                <span class="oi oi-box" aria-hidden="true"></span> Inventory
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="reports">
+                <span class="oi oi-bar-chart" aria-hidden="true"></span> Reports
+            </NavLink>
+        </div>
+    </nav>
+</div>
+
+@code {
+    private bool collapseNavMenu = true;
+
+    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+}
