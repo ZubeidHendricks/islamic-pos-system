@@ -1,16 +1,12 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using IslamicPOS.Core.Logistics.Models;
+using IslamicPOS.Core.Models.Logistics;
 
-namespace IslamicPOS.Core.Logistics.Interfaces
+namespace IslamicPOS.Core.Services.Logistics
 {
     public interface IRouteOptimizationService
     {
-        Task<OptimizedRoute> GenerateOptimalRoute(IEnumerable<DeliveryPoint> deliveryPoints);
-        Task<TimeWindow> CalculateDeliveryWindow(DeliveryPoint point, VehicleType vehicle);
-        Task<IEnumerable<OptimizedRoute>> GenerateDailyRoutes(DateTime date);
-        Task<bool> ValidateRoute(OptimizedRoute route);
-        Task<OptimizedRoute> UpdateRoute(Guid routeId, RouteStatus status);
+        Task<OptimizedRoute> OptimizeDeliveryRoute(List<DeliveryPoint> deliveryPoints);
+        Task<TimeWindow> GetOptimalDeliveryWindow(DeliveryPoint point);
+        Task<List<OptimizedRoute>> GetDailyRoutes();
+        Task<OptimizedRoute> UpdateRoute(int routeId);
     }
 }
