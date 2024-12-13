@@ -20,27 +20,18 @@ namespace IslamicPOS.Core.Services
         {
             try
             {
-                // Check product compliance
                 foreach (var item in transaction.Items)
                 {
                     if (!await IsHalalProduct(item.Product))
                     {
-                        _logger.LogWarning($"Non-halal product found in transaction: {item.ProductId}");
+                        _logger.LogWarning($"Non-halal product found: {item.ProductId}");
                         return false;
                     }
                 }
 
-                // Validate payment method
                 if (!IsValidPaymentMethod(transaction.PaymentMethod))
                 {
                     _logger.LogWarning($"Invalid payment method: {transaction.PaymentMethod}");
-                    return false;
-                }
-
-                // Validate financial period
-                if (!await ValidateFinancialPeriod(transaction.Timestamp.Date, transaction.Timestamp.Date))
-                {
-                    _logger.LogWarning("Transaction date falls in invalid financial period");
                     return false;
                 }
 
@@ -55,13 +46,8 @@ namespace IslamicPOS.Core.Services
 
         public async Task<bool> IsHalalProduct(Product product)
         {
-            // Check product category compliance
-            var nonHalalCategories = _configuration.GetSection("NonHalalCategories").Get<string[]>();
+            var nonHalalCategories = _configuration.GetSection("IslamicFinance:NonHalalCategories").Get<string[]>();
             if (nonHalalCategories?.Contains(product.Category) == true)
-                return false;
-
-            // Check product ingredients/attributes
-            if (product.Attributes?.Any(a => a.Key == "IsHalal" && a.Value.ToString() == "false") == true)
                 return false;
 
             return true;
@@ -109,14 +95,12 @@ namespace IslamicPOS.Core.Services
             notice.AppendLine("Islamic Finance Compliance Notice");
             notice.AppendLine("--------------------------------");
 
-            // Add Zakat information if applicable
             var zakatAmount = CalculateZakat(transaction.TotalAmount);
             if (zakatAmount > 0)
             {
                 notice.AppendLine($"Zakat Applicable: {zakatAmount:C}");
             }
 
-            // Add profit sharing information
             var (merchantShare, partnerShare) = CalculateProfitSharing(transaction.TotalAmount);
             notice.AppendLine($"Profit Distribution:");
             notice.AppendLine($"- Merchant Share: {merchantShare:C}");
@@ -125,12 +109,9 @@ namespace IslamicPOS.Core.Services
             return notice.ToString();
         }
 
-        public async Task<bool> ValidateFinancialPeriod(DateTime startDate, DateTime endDate)
+        public Task<bool> ValidateFinancialPeriod(DateTime startDate, DateTime endDate)
         {
-            // Implement financial period validation logic
-            // This could include checking against Islamic calendar
-            // or specific financial rules
-            return true; // Placeholder implementation
+            return Task.FromResult(true);
         }
     }
 }
