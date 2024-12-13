@@ -1,0 +1,171 @@
+@using IslamicPOS.Core.Services
+@inject IReceiptService ReceiptService
+@inject ISnackbar Snackbar
+
+<MudDialog @bind-IsVisible="@IsVisible">
+    <TitleContent>
+        <MudText Typo="Typo.h6">Receipt Printer Settings</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudGrid>
+            <MudItem xs="12">
+                <MudSelect T="string" 
+                          Label="Default Printer"
+                          @bind-Value="_settings.PrinterName"
+                          Required="true">
+                    @foreach (var printer in _availablePrinters)
+                    {
+                        <MudSelectItem Value="@printer">@printer</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudSelect T="string" 
+                          Label="Paper Size"
+                          @bind-Value="_settings.PaperSize">
+                    <MudSelectItem Value="80mm">80mm Roll</MudSelectItem>
+                    <MudSelectItem Value="58mm">58mm Roll</MudSelectItem>
+                    <MudSelectItem Value="A4">A4</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+
+            <MudItem xs="12" md="6">
+                <MudNumericField @bind-Value="_settings.Copies"
+                                Label="Number of Copies"
+                                Min="1"
+                                Max="3" />
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudTextField @bind-Value="_settings.HeaderText"
+                             Label="Receipt Header"
+                             Lines="2" />
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudTextField @bind-Value="_settings.FooterText"
+                             Label="Receipt Footer"
+                             Lines="2" />
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudSwitch @bind-Checked="_settings.PrintLogo"
+                          Color="Color.Primary"
+                          Label="Print Store Logo" />
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudSwitch @bind-Checked="_settings.PrintHalalCertification"
+                          Color="Color.Primary"
+                          Label="Print Halal Certification" />
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudPaper Class="pa-4" Elevation="0">
+                    <MudButton OnClick="TestPrint"
+                              Color="Color.Secondary"
+                              Variant="Variant.Outlined"
+                              StartIcon="@Icons.Material.Filled.Print"
+                              Class="mr-2">
+                        Print Test Receipt
+                    </MudButton>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary"
+                   OnClick="SaveSettings">Save Settings</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [Parameter]
+    public bool IsVisible { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> IsVisibleChanged { get; set; }
+
+    private PrinterSettings _settings = new();
+    private List<string> _availablePrinters = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPrinters();
+        await LoadSettings();
+    }
+
+    private async Task LoadPrinters()
+    {
+        _availablePrinters = await ReceiptService.GetAvailablePrinters();
+        StateHasChanged();
+    }
+
+    private async Task LoadSettings()
+    {
+        _settings = await ReceiptService.GetPrinterSettings(null);
+        StateHasChanged();
+    }
+
+    private async Task TestPrint()
+    {
+        try
+        {
+            // Create a test transaction
+            var testTransaction = new Transaction
+            {
+                Id = Guid.NewGuid(),
+                Timestamp = DateTime.Now,
+                Items = new List<TransactionItem>
+                {
+                    new()
+                    {
+                        ProductName = "Test Product",
+                        Quantity = 1,
+                        UnitPrice = 10.00m,
+                        Subtotal = 10.00m
+                    }
+                },
+                TotalAmount = 10.00m,
+                PaymentMethod = PaymentMethod.Cash,
+                ZakatAmount = 0.25m,
+                MerchantShare = 7.00m,
+                PartnerShare = 3.00m
+            };
+
+            await ReceiptService.PrintReceipt(testTransaction, _settings.PrinterName);
+            Snackbar.Add("Test receipt sent to printer", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Error printing test receipt", Severity.Error);
+        }
+    }
+
+    private async Task SaveSettings()
+    {
+        try
+        {
+            await ReceiptService.SavePrinterSettings(_settings);
+            await CloseDialog(true);
+            Snackbar.Add("Printer settings saved", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Error saving printer settings", Severity.Error);
+        }
+    }
+
+    private async Task Cancel()
+    {
+        await CloseDialog(false);
+    }
+
+    private async Task CloseDialog(bool success)
+    {
+        IsVisible = false;
+        await IsVisibleChanged.InvokeAsync(false);
+    }
+}
