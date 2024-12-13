@@ -2,15 +2,18 @@ name: Build Validation
 
 on:
   push:
-    branches:
-      - '**'
-      - '!main'   # Exclude main branch as it's handled by staged-deployment
+    branches-ignore:
+      - main
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
   validate:
     runs-on: ubuntu-latest
+    env:
+      DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
 
     steps:
     - uses: actions/checkout@v3
@@ -30,26 +33,18 @@ jobs:
 
     - name: Restore dependencies
       run: dotnet restore
+      working-directory: ./src
 
     - name: Build
-      run: dotnet build --no-restore
+      run: dotnet build --configuration Release --no-restore
+      working-directory: ./src
 
     - name: Run tests
-      run: dotnet test --no-build --verbosity normal
+      run: dotnet test --configuration Release --no-build --verbosity normal
+      working-directory: ./src
 
     - name: Check code formatting
       run: |
-        dotnet format --verify-no-changes
-
-    - name: Run Code Analysis
-      run: |
-        dotnet tool install --global dotnet-reportgenerator-globaltool
-        dotnet tool install --global dotnet-coverage
-        dotnet-coverage collect 'dotnet test' -f xml -o 'coverage.xml'
-        reportgenerator -reports:coverage.xml -targetdir:coveragereport -reporttypes:Html
-
-    - name: Upload coverage report
-      uses: actions/upload-artifact@v3
-      with:
-        name: Code Coverage Report
-        path: coveragereport
+        dotnet tool install -g dotnet-format
+        dotnet format --verify-no-changes --verbosity diagnostic
+      working-directory: ./src
