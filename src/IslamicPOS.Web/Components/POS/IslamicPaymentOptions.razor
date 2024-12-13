@@ -1,0 +1,54 @@
+@using IslamicPOS.Core.Models
+@using IslamicPOS.Core.Services
+
+<MudCard Class="mt-4">
+    <MudCardContent>
+        <MudText Typo="Typo.h6" Color="Color.Primary">Islamic Payment Options</MudText>
+        
+        <MudSelect T="PaymentMethod" 
+                  @bind-Value="SelectedPaymentMethod"
+                  Label="Halal Payment Method"
+                  Class="mt-4">
+            <MudSelectItem Value="PaymentMethod.Cash">Cash</MudSelectItem>
+            <MudSelectItem Value="PaymentMethod.BankTransfer">Bank Transfer</MudSelectItem>
+            <MudSelectItem Value="PaymentMethod.DigitalWallet">Digital Wallet</MudSelectItem>
+            <MudSelectItem Value="PaymentMethod.IslamicCredit">Islamic Credit</MudSelectItem>
+        </MudSelect>
+
+        @if (TransactionAmount >= ZakatThreshold)
+        {
+            <MudAlert Severity="Severity.Info" Class="mt-4">
+                Zakat Amount: @(IslamicFinanceService.CalculateZakat(TransactionAmount).ToString("C"))
+            </MudAlert>
+        }
+
+        @if (ShowProfitSharing)
+        {
+            var (merchantShare, partnerShare) = IslamicFinanceService.CalculateProfitSharing(TransactionAmount);
+            <MudAlert Severity="Severity.Info" Class="mt-4">
+                Profit Distribution:
+                <br />Merchant Share: @merchantShare.ToString("C")
+                <br />Partner Share: @partnerShare.ToString("C")
+            </MudAlert>
+        }
+    </MudCardContent>
+</MudCard>
+
+@code {
+    [Parameter]
+    public PaymentMethod SelectedPaymentMethod { get; set; }
+
+    [Parameter]
+    public EventCallback<PaymentMethod> SelectedPaymentMethodChanged { get; set; }
+
+    [Parameter]
+    public decimal TransactionAmount { get; set; }
+
+    [Parameter]
+    public bool ShowProfitSharing { get; set; } = true;
+
+    [Inject]
+    private IIslamicFinanceService IslamicFinanceService { get; set; }
+
+    private decimal ZakatThreshold = 5000m; // This could come from configuration
+}
