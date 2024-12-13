@@ -1,0 +1,91 @@
+@using IslamicPOS.Core.Models
+@using IslamicPOS.Core.Services
+@inject IReceiptService ReceiptService
+
+<MudDialog @bind-IsVisible="@IsVisible" Options="dialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">Receipt Preview</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudPaper Class="pa-4" Style="font-family: monospace; white-space: pre-wrap;">
+            @if (_receiptContent != null)
+            {
+                @_receiptContent
+            }
+            else
+            {
+                <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+            }
+        </MudPaper>
+    </DialogContent>
+    <DialogActions>
+        <MudSelect T="string" Label="Printer" @bind-Value="_selectedPrinter">
+            @foreach (var printer in _availablePrinters)
+            {
+                <MudSelectItem Value="@printer">@printer</MudSelectItem>
+            }
+        </MudSelect>
+        <MudButton OnClick="@(() => IsVisible = false)">Close</MudButton>
+        <MudButton Color="Color.Primary" OnClick="PrintReceipt">Print</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [Parameter]
+    public bool IsVisible { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> IsVisibleChanged { get; set; }
+
+    [Parameter]
+    public Transaction Transaction { get; set; }
+
+    private string _receiptContent;
+    private List<string> _availablePrinters = new();
+    private string _selectedPrinter;
+
+    private DialogOptions dialogOptions = new()
+    {
+        FullWidth = true,
+        MaxWidth = MaxWidth.Medium
+    };
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (IsVisible && Transaction != null)
+        {
+            await LoadReceipt();
+            await LoadPrinters();
+        }
+    }
+
+    private async Task LoadReceipt()
+    {
+        _receiptContent = await ReceiptService.GenerateReceipt(Transaction);
+        StateHasChanged();
+    }
+
+    private async Task LoadPrinters()
+    {
+        _availablePrinters = await ReceiptService.GetAvailablePrinters();
+        if (_availablePrinters.Any())
+        {
+            _selectedPrinter = _availablePrinters.First();
+        }
+        StateHasChanged();
+    }
+
+    private async Task PrintReceipt()
+    {
+        try
+        {
+            await ReceiptService.PrintReceipt(Transaction, _selectedPrinter);
+            IsVisible = false;
+            await IsVisibleChanged.InvokeAsync(false);
+        }
+        catch (Exception ex)
+        {
+            // TODO: Handle printing errors
+        }
+    }
+}
