@@ -9,6 +9,9 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    env:
+      DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
 
     steps:
     - uses: actions/checkout@v3
@@ -18,14 +21,22 @@ jobs:
       with:
         dotnet-version: '7.0.x'
 
-    - name: Restore dependencies
+    - name: Install dependencies
       run: dotnet restore
+      working-directory: ./src
 
     - name: Build
-      run: dotnet build --no-restore
+      run: dotnet build --configuration Release --no-restore
+      working-directory: ./src
 
     - name: Test
-      run: dotnet test --no-build --verbosity normal
+      run: dotnet test --configuration Release --no-build --verbosity normal --collect:"XPlat Code Coverage"
+      working-directory: ./src
+
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
 
   deploy-staging:
     needs: build-and-test
@@ -41,14 +52,24 @@ jobs:
       with:
         dotnet-version: '7.0.x'
 
-    - name: Build and Publish
-      run: |
-        dotnet restore
-        dotnet build --configuration Release
-        dotnet publish --configuration Release --output ./publish
+    - name: Restore dependencies
+      run: dotnet restore
+      working-directory: ./src
 
-    - name: Deploy to Staging
-      run: echo "Deploy to staging environment"
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
+      working-directory: ./src
+
+    - name: Publish
+      run: dotnet publish --configuration Release --no-build --output ./publish
+      working-directory: ./src/IslamicPOS.Web
+
+    - name: Deploy to Azure Web App
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: 'islamic-pos-staging'
+        publish-profile: ${{ secrets.STAGING_PUBLISH_PROFILE }}
+        package: './src/IslamicPOS.Web/publish'
 
   deploy-uat:
     needs: deploy-staging
@@ -64,14 +85,19 @@ jobs:
       with:
         dotnet-version: '7.0.x'
 
-    - name: Build and Publish
+    - name: Build and Deploy
       run: |
         dotnet restore
         dotnet build --configuration Release
         dotnet publish --configuration Release --output ./publish
+      working-directory: ./src/IslamicPOS.Web
 
     - name: Deploy to UAT
-      run: echo "Deploy to UAT environment"
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: 'islamic-pos-uat'
+        publish-profile: ${{ secrets.UAT_PUBLISH_PROFILE }}
+        package: './src/IslamicPOS.Web/publish'
 
   deploy-production:
     needs: deploy-uat
@@ -87,11 +113,16 @@ jobs:
       with:
         dotnet-version: '7.0.x'
 
-    - name: Build and Publish
+    - name: Build and Deploy
       run: |
         dotnet restore
         dotnet build --configuration Release
         dotnet publish --configuration Release --output ./publish
+      working-directory: ./src/IslamicPOS.Web
 
     - name: Deploy to Production
-      run: echo "Deploy to production environment"
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: 'islamic-pos-prod'
+        publish-profile: ${{ secrets.PROD_PUBLISH_PROFILE }}
+        package: './src/IslamicPOS.Web/publish'
