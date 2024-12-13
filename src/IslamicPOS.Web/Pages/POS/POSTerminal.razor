@@ -8,9 +8,181 @@
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
 
-... [previous content remains the same until payment processing] ...
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <MudGrid>
+        <!-- Left side - Product Search and Grid -->
+        <MudItem xs="12" md="8">
+            <ProductSearch OnProductSelected="AddToCart" />
+            
+            @if (_categories?.Any() == true)
+            {
+                <MudPaper Class="pa-4 mt-4">
+                    <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true">
+                        @foreach (var category in _categories)
+                        {
+                            <MudTabPanel Text="@category.Name">
+                                <div class="d-flex flex-wrap gap-4">
+                                    @foreach (var product in _productsByCategory[category.Id])
+                                    {
+                                        <MudPaper Class="pa-4" Style="width: 200px;" Elevation="2">
+                                            <MudText Typo="Typo.h6">@product.Name</MudText>
+                                            <MudText Color="Color.Secondary">@product.Price.ToString("C")</MudText>
+                                            <MudText Color="@(product.StockQuantity > 0 ? Color.Success : Color.Error)">
+                                                Stock: @product.StockQuantity
+                                            </MudText>
+                                            <MudButton Variant="Variant.Filled"
+                                                     Color="Color.Primary"
+                                                     OnClick="() => AddToCart(product)"
+                                                     Disabled="product.StockQuantity <= 0"
+                                                     FullWidth="true"
+                                                     Class="mt-2">Add to Cart</MudButton>
+                                            @if (product.IsHalalVerified)
+                                            {
+                                                <MudChip Color="Color.Success" Size="Size.Small" Class="mt-2">Halal Verified</MudChip>
+                                            }
+                                        </MudPaper>
+                                    }
+                                </div>
+                            </MudTabPanel>
+                        }
+                    </MudTabs>
+                </MudPaper>
+            }
+        </MudItem>
+
+        <!-- Right side - Shopping Cart -->
+        <MudItem xs="12" md="4">
+            <ShoppingCart Items="_cartItems"
+                         OnItemUpdated="HandleItemUpdated"
+                         OnTransactionCompleted="CompleteTransaction"
+                         OnCartCleared="ClearCart" />
+                         
+            <!-- Islamic Finance Summary -->
+            @if (_cartItems.Any())
+            {
+                <MudPaper Class="pa-4 mt-4">
+                    <MudText Typo="Typo.h6" Color="Color.Primary">Islamic Finance Summary</MudText>
+                    
+                    @if (_cartTotal >= _zakatThreshold)
+                    {
+                        <MudAlert Severity="Severity.Info" Class="mt-3">
+                            Zakat Applicable: @(_cartTotal * _zakatRate).ToString("C")
+                        </MudAlert>
+                    }
+
+                    @if (_profitSharingEnabled)
+                    {
+                        var (merchantShare, partnerShare) = IslamicFinanceService.CalculateProfitSharing(_cartTotal);
+                        <MudAlert Severity="Severity.Info" Class="mt-3">
+                            Profit Distribution:
+                            <br/>Merchant: @merchantShare.ToString("C")
+                            <br/>Partner: @partnerShare.ToString("C")
+                        </MudAlert>
+                    }
+                </MudPaper>
+            }
+        </MudItem>
+    </MudGrid>
+
+    <!-- Payment Dialog with Islamic Finance Integration -->
+    <MudDialog @bind-IsVisible="_showPayment">
+        <TitleContent>
+            <MudText Typo="Typo.h6">Process Halal Payment</MudText>
+        </TitleContent>
+        <DialogContent>
+            <MudGrid>
+                <MudItem xs="12">
+                    <MudText Typo="Typo.h4" Align="Align.Center" Color="Color.Primary">
+                        @_cartTotal.ToString("C")
+                    </MudText>
+                </MudItem>
+
+                <MudItem xs="12">
+                    <MudSelect T="PaymentMethod" 
+                              @bind-Value="_selectedPaymentMethod"
+                              Label="Halal Payment Method">
+                        <MudSelectItem Value="PaymentMethod.Cash">Cash</MudSelectItem>
+                        <MudSelectItem Value="PaymentMethod.BankTransfer">Bank Transfer</MudSelectItem>
+                        <MudSelectItem Value="PaymentMethod.DigitalWallet">Digital Wallet</MudSelectItem>
+                        <MudSelectItem Value="PaymentMethod.IslamicCredit">Islamic Credit</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+
+                @if (_selectedPaymentMethod == PaymentMethod.Cash)
+                {
+                    <MudItem xs="12">
+                        <MudTextField @bind-Value="_cashReceived"
+                                    Label="Cash Received"
+                                    Variant="Variant.Outlined"
+                                    Adornment="Adornment.Start"
+                                    AdornmentText="$"
+                                    OnKeyUp="CalculateChange" />
+                    </MudItem>
+
+                    @if (_cashChange > 0)
+                    {
+                        <MudItem xs="12">
+                            <MudAlert Severity="Severity.Info">
+                                Change Due: @_cashChange.ToString("C")
+                            </MudAlert>
+                        </MudItem>
+                    }
+                }
+
+                <!-- Islamic Finance Information -->
+                <MudItem xs="12">
+                    <MudCard>
+                        <MudCardContent>
+                            <MudText Typo="Typo.h6" Color="Color.Primary">Islamic Finance Compliance</MudText>
+                            
+                            @if (_cartTotal >= _zakatThreshold)
+                            {
+                                <MudAlert Severity="Severity.Info" Class="mt-3">
+                                    Zakat Amount: @IslamicFinanceService.CalculateZakat(_cartTotal).ToString("C")
+                                </MudAlert>
+                            }
+
+                            @if (_profitSharingEnabled)
+                            {
+                                var (merchantShare, partnerShare) = IslamicFinanceService.CalculateProfitSharing(_cartTotal);
+                                <MudAlert Severity="Severity.Info" Class="mt-3">
+                                    Profit Distribution:
+                                    <br />Merchant Share: @merchantShare.ToString("C")
+                                    <br />Partner Share: @partnerShare.ToString("C")
+                                </MudAlert>
+                            }
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+            </MudGrid>
+        </DialogContent>
+        <DialogActions>
+            <MudButton OnClick="CancelPayment">Cancel</MudButton>
+            <MudButton Color="Color.Primary" 
+                      OnClick="ProcessPayment"
+                      Disabled="!CanProcessPayment">Process Halal Payment</MudButton>
+        </DialogActions>
+    </MudDialog>
+</MudContainer>
 
 @code {
+    private List<TransactionItem> _cartItems = new();
+    private List<ProductCategory> _categories;
+    private Dictionary<int, List<Product>> _productsByCategory;
+    private bool _showPayment;
+    private PaymentMethod _selectedPaymentMethod = PaymentMethod.Cash;
+    private decimal _cashReceived;
+    private decimal _cashChange;
+    private readonly decimal _zakatThreshold = 5000m;
+    private readonly decimal _zakatRate = 0.025m;
+    private bool _profitSharingEnabled = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCategories();
+        await LoadProducts();
+    }
+
     private async Task ProcessPayment()
     {
         if (!CanProcessPayment) return;
@@ -68,5 +240,33 @@
         }
     }
 
-    // Other existing code remains the same
+    private async Task LoadCategories()
+    {
+        _categories = await CategoryService.GetAllCategories();
+    }
+
+    private async Task LoadProducts()
+    {
+        _productsByCategory = new Dictionary<int, List<Product>>();
+        foreach (var category in _categories)
+        {
+            _productsByCategory[category.Id] = await ProductService.GetProductsByCategory(category.Id);
+        }
+    }
+
+    private void CalculateChange()
+    {
+        _cashChange = _cashReceived >= _cartTotal ? _cashReceived - _cartTotal : 0;
+    }
+
+    private bool CanProcessPayment =>
+        _selectedPaymentMethod != PaymentMethod.Cash ||
+        (_cashReceived >= _cartTotal);
+
+    private void CancelPayment()
+    {
+        _showPayment = false;
+        _cashReceived = 0;
+        _cashChange = 0;
+    }
 }
