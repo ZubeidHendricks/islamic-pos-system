@@ -1,0 +1,8 @@
+variables:
+  Environment: staging
+  DbServer: '#{STAGING_DB_SERVER}#'
+  DbName: '#{STAGING_DB_NAME}#'
+  DbUser: '#{STAGING_DB_USER}#'
+  AzureWebJobsStorage: '#{STAGING_STORAGE_CONNECTION}#'
+  PrinterConfig: '#{STAGING_PRINTER_CONFIG}#'
+  IslamicFinanceConfig: '#{STAGING_ISLAMIC_FINANCE_CONFIG}#'
