@@ -8,119 +8,12 @@
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
 
-<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
-    <!-- Existing content remains the same until the payment dialog -->
-
-    <!-- Modified Payment Dialog with Islamic Finance Rules -->
-    <MudDialog @bind-IsVisible="_showPayment">
-        <TitleContent>
-            <MudText Typo="Typo.h6">Process Halal Payment</MudText>
-        </TitleContent>
-        <DialogContent>
-            <MudGrid>
-                <MudItem xs="12">
-                    <MudText Typo="Typo.h4" Align="Align.Center" Color="Color.Primary">
-                        @_cartTotal.ToString("C")
-                    </MudText>
-                </MudItem>
-
-                <MudItem xs="12">
-                    <MudSelect T="PaymentMethod" 
-                              @bind-Value="_selectedPaymentMethod"
-                              Label="Halal Payment Method">
-                        <MudSelectItem Value="PaymentMethod.Cash">Cash</MudSelectItem>
-                        <MudSelectItem Value="PaymentMethod.BankTransfer">Bank Transfer</MudSelectItem>
-                        <MudSelectItem Value="PaymentMethod.DigitalWallet">Digital Wallet</MudSelectItem>
-                        <MudSelectItem Value="PaymentMethod.IslamicCredit">Islamic Credit</MudSelectItem>
-                    </MudSelect>
-                </MudItem>
-
-                @if (_selectedPaymentMethod == PaymentMethod.Cash)
-                {
-                    <MudItem xs="12">
-                        <MudTextField @bind-Value="_cashReceived"
-                                    Label="Cash Received"
-                                    Variant="Variant.Outlined"
-                                    Adornment="Adornment.Start"
-                                    AdornmentText="$"
-                                    OnKeyUp="CalculateChange" />
-                    </MudItem>
-
-                    @if (_cashChange > 0)
-                    {
-                        <MudItem xs="12">
-                            <MudAlert Severity="Severity.Info">
-                                Change Due: @_cashChange.ToString("C")
-                            </MudAlert>
-                        </MudItem>
-                    }
-                }
-
-                <!-- Islamic Finance Information -->
-                <MudItem xs="12">
-                    <MudCard>
-                        <MudCardContent>
-                            <MudText Typo="Typo.h6" Color="Color.Primary">Islamic Finance Compliance</MudText>
-                            
-                            @if (_cartTotal >= _zakatThreshold)
-                            {
-                                <MudAlert Severity="Severity.Info" Class="mt-3">
-                                    Zakat Applicable: @(_cartTotal * _zakatRate).ToString("C")
-                                </MudAlert>
-                            }
-
-                            @if (_profitSharingEnabled)
-                            {
-                                var (merchantShare, partnerShare) = CalculateProfitSharing();
-                                <MudAlert Severity="Severity.Info" Class="mt-3">
-                                    Profit Sharing:
-                                    <br />Merchant: @merchantShare.ToString("C")
-                                    <br />Partner: @partnerShare.ToString("C")
-                                </MudAlert>
-                            }
-                        </MudCardContent>
-                    </MudCard>
-                </MudItem>
-            </MudGrid>
-        </DialogContent>
-        <DialogActions>
-            <MudButton OnClick="CancelPayment">Cancel</MudButton>
-            <MudButton Color="Color.Primary" 
-                      OnClick="ProcessPayment"
-                      Disabled="!CanProcessPayment">Process Halal Payment</MudButton>
-        </DialogActions>
-    </MudDialog>
-
-    <!-- Rest of the existing content -->
-</MudContainer>
+... [previous content remains the same until payment processing] ...
 
 @code {
-    // Existing variables remain the same
-
-    // Islamic Finance related variables
-    private readonly decimal _zakatThreshold = 5000m; // Nisab threshold
-    private readonly decimal _zakatRate = 0.025m; // 2.5%
-    private readonly decimal _profitSharingRatio = 0.7m; // 70:30 split
-    private bool _profitSharingEnabled = true;
-
-    private (decimal merchantShare, decimal partnerShare) CalculateProfitSharing()
-    {
-        decimal profit = _cartTotal * 0.2m; // Assuming 20% profit margin
-        decimal merchantShare = profit * _profitSharingRatio;
-        decimal partnerShare = profit - merchantShare;
-        return (merchantShare, partnerShare);
-    }
-
     private async Task ProcessPayment()
     {
         if (!CanProcessPayment) return;
-
-        // Validate payment method
-        if (!IslamicFinanceService.IsValidPaymentMethod(_selectedPaymentMethod))
-        {
-            Snackbar.Add("Selected payment method does not comply with Islamic principles", Severity.Warning);
-            return;
-        }
 
         var transaction = new Transaction
         {
@@ -128,33 +21,23 @@
             Timestamp = DateTime.UtcNow,
             Items = _cartItems.ToList(),
             TotalAmount = _cartTotal,
-            Status = TransactionStatus.Completed,
-            PaymentMethod = _selectedPaymentMethod,
-            IsHalalCompliant = true
+            PaymentMethod = _selectedPaymentMethod
         };
-
-        // Add Zakat calculation if applicable
-        if (_cartTotal >= _zakatThreshold)
-        {
-            transaction.ZakatAmount = _cartTotal * _zakatRate;
-        }
-
-        // Add profit sharing if enabled
-        if (_profitSharingEnabled)
-        {
-            var (merchantShare, partnerShare) = CalculateProfitSharing();
-            transaction.MerchantShare = merchantShare;
-            transaction.PartnerShare = partnerShare;
-        }
 
         try
         {
-            // Validate transaction
+            // Validate Islamic compliance
             if (!await IslamicFinanceService.ValidateTransaction(transaction))
             {
-                Snackbar.Add("Transaction does not comply with Islamic principles", Severity.Error);
+                Snackbar.Add("Transaction does not comply with Islamic finance principles", Severity.Error);
                 return;
             }
+
+            // Add compliance information
+            transaction.ComplianceNotice = IslamicFinanceService.GetTransactionComplianceNotice(transaction);
+            transaction.ZakatAmount = IslamicFinanceService.CalculateZakat(transaction.TotalAmount);
+            (transaction.MerchantShare, transaction.PartnerShare) = 
+                IslamicFinanceService.CalculateProfitSharing(transaction.TotalAmount);
 
             // Process transaction
             await TransactionService.CreateTransaction(transaction);
@@ -181,9 +64,9 @@
         catch (Exception ex)
         {
             Snackbar.Add("Error processing transaction", Severity.Error);
-            // Log the error
+            _logger.LogError(ex, "Error processing Islamic finance transaction");
         }
     }
 
-    // Rest of the existing methods remain the same
+    // Other existing code remains the same
 }
