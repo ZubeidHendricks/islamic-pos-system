@@ -1,0 +1,47 @@
+@using IslamicPOS.Core.Models
+@using IslamicPOS.Core.Services
+
+<MudCard Class="mt-4">
+    <MudCardContent>
+        <MudText Typo="Typo.h6" Color="Color.Primary">Halal Verification Status</MudText>
+        
+        @if (Product != null)
+        {
+            @if (Product.IsHalalVerified)
+            {
+                <MudAlert Severity="Severity.Success" Class="mt-4">
+                    This product is Halal verified
+                    @if (!string.IsNullOrEmpty(Product.CertificationAuthority))
+                    {
+                        <br/>Certified by: @Product.CertificationAuthority
+                    }
+                </MudAlert>
+            }
+            else
+            {
+                <MudAlert Severity="Severity.Warning" Class="mt-4">
+                    Halal verification pending
+                </MudAlert>
+            }
+
+            @if (!string.IsNullOrEmpty(Product.HalalCertificationNumber))
+            {
+                <MudText Class="mt-2" Typo="Typo.body2">
+                    Certificate Number: @Product.HalalCertificationNumber
+                </MudText>
+            }
+
+            @if (Product.CertificationExpiryDate.HasValue)
+            {
+                <MudText Class="mt-2" Typo="Typo.body2">
+                    Valid until: @Product.CertificationExpiryDate.Value.ToShortDateString()
+                </MudText>
+            }
+        }
+    </MudCardContent>
+</MudCard>
+
+@code {
+    [Parameter]
+    public Product Product { get; set; }
+}
