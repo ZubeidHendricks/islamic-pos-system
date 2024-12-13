@@ -1,17 +1,40 @@
 @inherits LayoutComponentBase
 
-<div class="page">
-    <div class="sidebar">
+<MudThemeProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudAppBar>
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@ToggleDrawer" />
+        <MudText Typo="Typo.h6">Islamic POS System</MudText>
+        <MudSpacer />
+        <MudIconButton Icon="@Icons.Material.Filled.Print" Color="Color.Inherit" OnClick="OpenPrinterSettings" />
+        <MudIconButton Icon="@Icons.Material.Filled.Settings" Color="Color.Inherit" />
+    </MudAppBar>
+
+    <MudDrawer @bind-Open="@_drawerOpen">
         <NavMenu />
-    </div>
+    </MudDrawer>
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core" target="_blank">About</a>
-        </div>
+    <MudMainContent>
+        @Body
+    </MudMainContent>
+</MudLayout>
 
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
-</div>
+<PrinterSettings @bind-IsVisible="_showPrinterSettings" />
+
+@code {
+    private bool _drawerOpen = true;
+    private bool _showPrinterSettings;
+
+    private void ToggleDrawer()
+    {
+        _drawerOpen = !_drawerOpen;
+    }
+
+    private void OpenPrinterSettings()
+    {
+        _showPrinterSettings = true;
+    }
+}
