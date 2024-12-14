@@ -9,37 +9,29 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    env:
+      DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+      DOTNET_CLI_TELEMETRY_OPTOUT: 1
 
     steps:
     - uses: actions/checkout@v3
-    
-    - name: Clear global.json
-      run: rm -f global.json || true
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: '8.0.404'
 
-    - name: Create global.json
-      run: |
-        echo '{
-          "sdk": {
-            "version": "8.0.404"
-          }
-        }' > global.json
-
-    - name: Verify .NET version
+    - name: Verify .NET installation
       run: dotnet --info
 
+    - name: Clean
+      run: dotnet clean ./IslamicPOS.sln --configuration Release
+
     - name: Restore dependencies
-      run: dotnet restore
-      working-directory: ./src
+      run: dotnet restore ./IslamicPOS.sln
 
     - name: Build
-      run: dotnet build --no-restore
-      working-directory: ./src
+      run: dotnet build ./IslamicPOS.sln --configuration Release --no-restore
 
     - name: Test
-      run: dotnet test --no-build
-      working-directory: ./src
+      run: dotnet test ./IslamicPOS.sln --configuration Release --no-build
