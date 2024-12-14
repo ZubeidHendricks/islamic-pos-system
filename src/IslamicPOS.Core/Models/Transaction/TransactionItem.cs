@@ -1,5 +1,4 @@
 using IslamicPOS.Core.Models.Common;
-using IslamicPOS.Core.Models.Product;
 
 namespace IslamicPOS.Core.Models.Transaction
 {
@@ -12,6 +11,6 @@ namespace IslamicPOS.Core.Models.Transaction
         public Product.Product Product { get; set; }
         public int Quantity { get; set; }
         public Money UnitPrice { get; set; }
-        public Money Subtotal => Money.Create(UnitPrice.Amount * Quantity);
+        public Money Subtotal => Money.Create(UnitPrice.Amount * Quantity, UnitPrice.Currency);
     }
 }

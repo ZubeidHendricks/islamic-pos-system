@@ -29,7 +29,7 @@ namespace IslamicPOS.Core.Models.Transaction
 
         private void CalculateTotals()
         {
-            var total = Items.Sum(i => i.Subtotal);
+            var total = Items.Sum(i => i.Subtotal.Amount);
             TotalAmount = Money.Create(total);
         }
 
