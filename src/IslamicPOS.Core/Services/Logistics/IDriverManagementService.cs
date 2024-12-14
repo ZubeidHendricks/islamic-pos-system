@@ -1,19 +1,33 @@
-using IslamicPOS.Core.Models.Logistics;
-
-namespace IslamicPOS.Core.Services.Logistics;
-
-public interface IDriverManagementService
+namespace IslamicPOS.Core.Services.Logistics
 {
-    Task<Driver> AddDriver(Driver driver);
-    Task<Driver> UpdateDriver(Driver driver);
-    Task<bool> DeleteDriver(string id);
-    Task<Driver> GetDriver(string id);
-    Task<List<Driver>> GetAllDrivers();
-    Task<List<Driver>> GetAvailableDrivers();
-    Task<bool> AssignDriver(string driverId, int routeId);
-    Task<bool> UpdateDriverLocation(string driverId, double latitude, double longitude);
-    Task<List<DriverSchedule>> GetDriverSchedules();
-    Task<DriverPerformance> GetDriverPerformance(string driverId);
-    Task<bool> VerifyDriverCertifications(string driverId);
-    Task<List<DriverAlert>> GetDriverAlerts();
+    public interface IDriverManagementService
+    {
+        Task<IEnumerable<DriverSchedule>> GetSchedule(DateTime date);
+        Task<DriverPerformance> GetPerformance(string driverId, DateTime startDate, DateTime endDate);
+        Task<IEnumerable<DriverAlert>> GetAlerts();
+    }
+
+    public class DriverSchedule
+    {
+        public string DriverId { get; set; }
+        public DateTime StartTime { get; set; }
+        public DateTime EndTime { get; set; }
+        public List<string> DeliveryOrderIds { get; set; } = new();
+    }
+
+    public class DriverPerformance
+    {
+        public string DriverId { get; set; }
+        public int DeliveriesCompleted { get; set; }
+        public int DeliveriesFailed { get; set; }
+        public decimal OnTimePercentage { get; set; }
+    }
+
+    public class DriverAlert
+    {
+        public string DriverId { get; set; }
+        public string AlertType { get; set; }
+        public string Message { get; set; }
+        public DateTime Timestamp { get; set; }
+    }
 }

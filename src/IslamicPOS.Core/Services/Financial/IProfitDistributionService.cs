@@ -1,9 +1,10 @@
-namespace IslamicPOS.Core.Services.Financial;
+using IslamicPOS.Core.Models.IslamicFinance;
 
-public interface IProfitDistributionService
+namespace IslamicPOS.Core.Services.Financial
 {
-    Task<ProfitDistribution> CalculateDistributionAsync(DateTime startDate, DateTime endDate);
-    Task<DistributionResult> ProcessDistributionAsync(ProfitDistribution distribution);
-    Task<List<DistributionHistory>> GetDistributionHistoryAsync(DateTime? startDate = null); // Retain nullable parameter
-    Task<PartnerShare> GetPartnerShareAsync(int partnerId, DateTime startDate, DateTime endDate); // Include new method
+    public interface IProfitDistributionService
+    {
+        Task<ProfitSharing> CalculateDistribution(decimal totalAmount);
+        Task<IEnumerable<ProfitSharing>> GetDistributionHistory(DateTime startDate, DateTime endDate);
+    }
 }
