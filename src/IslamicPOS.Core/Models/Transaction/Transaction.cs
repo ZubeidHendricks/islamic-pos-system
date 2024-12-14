@@ -1,27 +1,55 @@
+using IslamicPOS.Core.Models.Base;
 using IslamicPOS.Core.Models.Common;
 
-namespace IslamicPOS.Core.Models.Transaction;
-
-public class Transaction : Entity
+namespace IslamicPOS.Core.Models.Transaction
 {
-    public string TransactionNumber { get; set; } = string.Empty;
-    public decimal TotalAmount { get; set; }
-    public string TransactionType { get; set; } = string.Empty;
-    public string Status { get; set; } = string.Empty;
-    public string UserId { get; set; } = string.Empty;
-    public List<TransactionItem> Items { get; set; } = new();
-    public string PaymentMethod { get; set; } = string.Empty;
-    public string? Notes { get; set; }
-}
+    public class Transaction : AuditableEntity
+    {
+        public Guid TransactionNumber { get; private set; }
+        public DateTime TransactionDate { get; private set; }
+        public List<TransactionItem> Items { get; private set; }
+        public Money TotalAmount { get; private set; }
+        public Money ZakatAmount { get; private set; }
+        public PaymentMethod PaymentMethod { get; private set; }
+        public TransactionStatus Status { get; private set; }
+        public bool IsHalalCompliant { get; private set; }
+        public string ComplianceNotes { get; private set; }
 
-public class TransactionItem : Entity
-{
-    public Guid TransactionId { get; set; }
-    public Transaction Transaction { get; set; } = null!;
-    public Guid ProductId { get; set; }
-    public int Quantity { get; set; }
-    public decimal UnitPrice { get; set; }
-    public decimal Discount { get; set; }
-    public decimal Total { get; set; }
-    public string? Notes { get; set; }
+        private Transaction() {} // For EF Core
+
+        public Transaction(List<TransactionItem> items, PaymentMethod paymentMethod)
+        {
+            TransactionNumber = Guid.NewGuid();
+            TransactionDate = DateTime.UtcNow;
+            Items = items;
+            PaymentMethod = paymentMethod;
+            Status = TransactionStatus.Pending;
+            CalculateTotals();
+        }
+
+        private void CalculateTotals()
+        {
+            var total = Items.Sum(i => i.Subtotal);
+            TotalAmount = Money.Create(total);
+        }
+
+        public void Complete()
+        {
+            Status = TransactionStatus.Completed;
+            UpdatedAt = DateTime.UtcNow;
+        }
+
+        public void SetZakat(Money zakatAmount)
+        {
+            ZakatAmount = zakatAmount;
+            UpdatedAt = DateTime.UtcNow;
+        }
+
+        public void MarkAsHalalCompliant(string notes = null)
+        {
+            IsHalalCompliant = true;
+            ComplianceNotes = notes;
+            UpdatedAt = DateTime.UtcNow;
+        }
+    }
 }
