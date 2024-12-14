@@ -1,5 +1,3 @@
-using IslamicPOS.Core.Models.Common;
-
 namespace IslamicPOS.Core.Models.IslamicFinance;
 
 public class MudarabahResult : Entity
