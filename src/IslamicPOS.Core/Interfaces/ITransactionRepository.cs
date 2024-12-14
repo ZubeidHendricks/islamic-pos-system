@@ -1,11 +1,12 @@
-using IslamicPOS.Core.Models;
+using IslamicPOS.Core.Models.Transaction;
 
-namespace IslamicPOS.Core.Interfaces;
-
-public interface ITransactionRepository
+namespace IslamicPOS.Core.Interfaces
 {
-    Task<Transaction> CreateAsync(Transaction transaction);
-    Task<Transaction?> GetByIdAsync(Guid id);
-    Task<IEnumerable<Transaction>> GetByDateRangeAsync(DateTime startDate, DateTime endDate);
-    Task<decimal> GetTotalRevenueAsync(DateTime startDate, DateTime endDate);
+    public interface ITransactionRepository
+    {
+        Task<Transaction> GetByIdAsync(int id);
+        Task<IEnumerable<Transaction>> GetAllAsync();
+        Task<Transaction> AddAsync(Transaction transaction);
+        Task UpdateAsync(Transaction transaction);
+    }
 }
