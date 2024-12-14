@@ -12,86 +12,34 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+    
+    - name: Clear global.json
+      run: rm -f global.json || true
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: '7.0.x'
+        dotnet-version: '8.0.404'
+
+    - name: Create global.json
+      run: |
+        echo '{
+          "sdk": {
+            "version": "8.0.404"
+          }
+        }' > global.json
+
+    - name: Verify .NET version
+      run: dotnet --info
 
     - name: Restore dependencies
       run: dotnet restore
+      working-directory: ./src
 
     - name: Build
       run: dotnet build --no-restore
+      working-directory: ./src
 
     - name: Test
-      run: dotnet test --no-build --verbosity normal
-
-  deploy-staging:
-    needs: build-and-test
-    runs-on: ubuntu-latest
-    environment: staging
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-
-    steps:
-    - uses: actions/checkout@v3
-
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: '7.0.x'
-
-    - name: Build and Publish
-      run: |
-        dotnet restore
-        dotnet build --configuration Release
-        dotnet publish --configuration Release --output ./publish
-
-    - name: Deploy to Staging
-      run: echo "Deploy to staging environment"
-
-  deploy-uat:
-    needs: deploy-staging
-    runs-on: ubuntu-latest
-    environment: uat
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-
-    steps:
-    - uses: actions/checkout@v3
-
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: '7.0.x'
-
-    - name: Build and Publish
-      run: |
-        dotnet restore
-        dotnet build --configuration Release
-        dotnet publish --configuration Release --output ./publish
-
-    - name: Deploy to UAT
-      run: echo "Deploy to UAT environment"
-
-  deploy-production:
-    needs: deploy-uat
-    runs-on: ubuntu-latest
-    environment: production
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-
-    steps:
-    - uses: actions/checkout@v3
-
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: '7.0.x'
-
-    - name: Build and Publish
-      run: |
-        dotnet restore
-        dotnet build --configuration Release
-        dotnet publish --configuration Release --output ./publish
-
-    - name: Deploy to Production
-      run: echo "Deploy to production environment"
+      run: dotnet test --no-build
+      working-directory: ./src
