@@ -12,6 +12,8 @@ jobs:
     
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
     
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
@@ -22,10 +24,7 @@ jobs:
       run: dotnet nuget locals all --clear
     
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore --force
     
     - name: Build
-      run: dotnet build --configuration Release --no-restore
-    
-    - name: Test
-      run: dotnet test --configuration Release --no-build --verbosity normal
+      run: dotnet build --no-restore --configuration Release

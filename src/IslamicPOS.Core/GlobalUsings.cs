@@ -9,18 +9,11 @@ global using Microsoft.Extensions.Configuration;
 global using Microsoft.Extensions.DependencyInjection;
 global using Microsoft.Extensions.Logging;
 
-// Identity and security
-global using Microsoft.AspNetCore.Identity;
+// Entity Framework Core
+global using Microsoft.EntityFrameworkCore;
 
-// Core models
+// Core domain
+global using IslamicPOS.Core.Models;
 global using IslamicPOS.Core.Models.Common;
-global using IslamicPOS.Core.Models.Product;
-global using IslamicPOS.Core.Models.Transaction;
-global using IslamicPOS.Core.Models.Auth;
-global using IslamicPOS.Core.Models.Logistics;
-global using IslamicPOS.Core.Models.Report;
-global using IslamicPOS.Core.Models.IslamicFinance;
-
-// Core services and interfaces
 global using IslamicPOS.Core.Services;
 global using IslamicPOS.Core.Interfaces;
