@@ -1,15 +1,18 @@
-using IslamicPOS.Core.Models;
+using IslamicPOS.Core.Models.Transaction;
+using IslamicPOS.Core.Models.Product;
+using IslamicPOS.Core.Models.Common;
+using IslamicPOS.Core.Models.IslamicFinance;
 
 namespace IslamicPOS.Core.Services
 {
     public interface IIslamicFinanceService
     {
         Task<bool> ValidateTransaction(Transaction transaction);
-        Task<bool> IsHalalProduct(Product product);
+        Task<bool> IsHalalProduct(ProductItem product);
         bool IsValidPaymentMethod(PaymentMethod method);
-        decimal CalculateZakat(decimal amount);
-        (decimal merchantShare, decimal partnerShare) CalculateProfitSharing(decimal totalAmount);
-        string GetTransactionComplianceNotice(Transaction transaction);
+        Task<ZakatCalculation> CalculateZakat(Money amount);
+        Task<ProfitSharing> CalculateProfitSharing(Money totalAmount);
+        Task<string> GetTransactionComplianceNotice(Transaction transaction);
         Task<bool> ValidateFinancialPeriod(DateTime startDate, DateTime endDate);
     }
 }
