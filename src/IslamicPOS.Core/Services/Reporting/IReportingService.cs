@@ -1,10 +1,20 @@
-namespace IslamicPOS.Core.Services.Reporting;
+using IslamicPOS.Core.Models.Transaction;
 
-public interface IReportingService
+namespace IslamicPOS.Core.Services.Reporting
 {
-    Task<SalesSummary> GetSalesSummaryAsync(DateTime startDate, DateTime endDate);
-    Task<ProfitReport> GetProfitReportAsync(DateTime startDate, DateTime endDate);
-    Task<ZakaahReport> GetZakaahReportAsync(DateTime startDate, DateTime endDate);
-    Task<PartnerReport> GetPartnerReportAsync(int partnerId, DateTime startDate, DateTime endDate);
-    Task<byte[]> ExportReportAsync(ReportType type, DateTime startDate, DateTime endDate, string format);
+    public interface IReportingService
+    {
+        Task<IEnumerable<Transaction>> GetTransactionHistory(DateTime startDate, DateTime endDate);
+        Task<decimal> GetTotalSales(DateTime startDate, DateTime endDate);
+        Task<decimal> GetTotalZakat(DateTime startDate, DateTime endDate);
+        Task<IEnumerable<TransactionSummary>> GetDailySummary(DateTime date);
+    }
+
+    public class TransactionSummary
+    {
+        public DateTime Date { get; set; }
+        public int TransactionCount { get; set; }
+        public decimal TotalAmount { get; set; }
+        public decimal ZakatAmount { get; set; }
+    }
 }
