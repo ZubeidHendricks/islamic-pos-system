@@ -1,8 +1,11 @@
-namespace IslamicPOS.Core.Services.Reports;
+using IslamicPOS.Core.Models.Reporting;
 
-public interface IReportingService
+namespace IslamicPOS.Core.Services.Reports
 {
-    Task<SalesSummary> GetSalesSummaryAsync(DateTime startDate, DateTime endDate);
-    Task<ProfitReport> GetProfitReportAsync(DateTime startDate, DateTime endDate);
-    Task<ZakaahReport> GetZakaahReportAsync(DateTime startDate, DateTime endDate);
+    public interface IReportingService
+    {
+        Task<SalesSummary> GetDailySalesSummary(DateTime date);
+        Task<ProfitReport> GetProfitReport(DateTime startDate, DateTime endDate);
+        Task<ZakaahReport> GetZakaahReport(DateTime date);
+    }
 }
