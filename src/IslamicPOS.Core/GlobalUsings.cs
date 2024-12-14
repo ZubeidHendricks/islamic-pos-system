@@ -10,7 +10,6 @@ global using Microsoft.Extensions.DependencyInjection;
 global using Microsoft.Extensions.Logging;
 
 // Core domain models
-global using IslamicPOS.Core.Models;
 global using IslamicPOS.Core.Models.Common;
 global using IslamicPOS.Core.Models.Product;
 global using IslamicPOS.Core.Models.Transaction;
