@@ -1,7 +1,9 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using System.Text;
-using IslamicPOS.Core.Models;
+using IslamicPOS.Core.Models.Transaction;
+using IslamicPOS.Core.Models.Product;
+using IslamicPOS.Core.Models.Common;
+using IslamicPOS.Core.Models.IslamicFinance;
 
 namespace IslamicPOS.Core.Services
 {
@@ -10,7 +12,9 @@ namespace IslamicPOS.Core.Services
         private readonly IConfiguration _configuration;
         private readonly ILogger<IslamicFinanceService> _logger;
 
-        public IslamicFinanceService(IConfiguration configuration, ILogger<IslamicFinanceService> logger)
+        public IslamicFinanceService(
+            IConfiguration configuration,
+            ILogger<IslamicFinanceService> logger)
         {
             _configuration = configuration;
             _logger = logger;
@@ -20,27 +24,18 @@ namespace IslamicPOS.Core.Services
         {
             try
             {
-                // Check product compliance
                 foreach (var item in transaction.Items)
                 {
                     if (!await IsHalalProduct(item.Product))
                     {
-                        _logger.LogWarning($"Non-halal product found in transaction: {item.ProductId}");
+                        _logger.LogWarning($"Non-halal product in transaction: {item.ProductId}");
                         return false;
                     }
                 }
 
-                // Validate payment method
                 if (!IsValidPaymentMethod(transaction.PaymentMethod))
                 {
                     _logger.LogWarning($"Invalid payment method: {transaction.PaymentMethod}");
-                    return false;
-                }
-
-                // Validate financial period
-                if (!await ValidateFinancialPeriod(transaction.Timestamp.Date, transaction.Timestamp.Date))
-                {
-                    _logger.LogWarning("Transaction date falls in invalid financial period");
                     return false;
                 }
 
@@ -53,18 +48,17 @@ namespace IslamicPOS.Core.Services
             }
         }
 
-        public async Task<bool> IsHalalProduct(Product product)
+        public async Task<bool> IsHalalProduct(ProductItem product)
         {
             // Check product category compliance
-            var nonHalalCategories = _configuration.GetSection("NonHalalCategories").Get<string[]>();
-            if (nonHalalCategories?.Contains(product.Category) == true)
+            var nonHalalCategories = _configuration
+                .GetSection("IslamicFinance:NonHalalCategories")
+                .Get<string[]>();
+
+            if (nonHalalCategories?.Contains(product.Category.Name) == true)
                 return false;
 
-            // Check product ingredients/attributes
-            if (product.Attributes?.Any(a => a.Key == "IsHalal" && a.Value.ToString() == "false") == true)
-                return false;
-
-            return true;
+            return product.IsHalalVerified;
         }
 
         public bool IsValidPaymentMethod(PaymentMethod method)
@@ -80,57 +74,35 @@ namespace IslamicPOS.Core.Services
             };
         }
 
-        public decimal CalculateZakat(decimal amount)
+        public async Task<ZakatCalculation> CalculateZakat(Money amount)
         {
-            var nisabThreshold = _configuration.GetValue<decimal>("IslamicFinance:NisabThreshold");
-            var zakatRate = _configuration.GetValue<decimal>("IslamicFinance:ZakatRate");
-
-            if (amount < nisabThreshold)
-                return 0;
-
-            return Math.Round(amount * zakatRate, 2);
+            var nisabThreshold = Money.Create(
+                _configuration.GetValue<decimal>("IslamicFinance:NisabThreshold"));
+            
+            return new ZakatCalculation(amount, nisabThreshold);
         }
 
-        public (decimal merchantShare, decimal partnerShare) CalculateProfitSharing(decimal totalAmount)
+        public async Task<ProfitSharing> CalculateProfitSharing(Money totalAmount)
         {
-            var profitMargin = _configuration.GetValue<decimal>("IslamicFinance:ProfitMargin");
-            var merchantRatio = _configuration.GetValue<decimal>("IslamicFinance:MerchantProfitRatio");
+            var merchantShare = _configuration
+                .GetValue<decimal>("IslamicFinance:DefaultMerchantShare", 0.7m);
 
-            var totalProfit = totalAmount * profitMargin;
-            var merchantShare = Math.Round(totalProfit * merchantRatio, 2);
-            var partnerShare = Math.Round(totalProfit - merchantShare, 2);
-
-            return (merchantShare, partnerShare);
+            return new ProfitSharing(totalAmount, merchantShare);
         }
 
-        public string GetTransactionComplianceNotice(Transaction transaction)
+        public async Task<string> GetTransactionComplianceNotice(Transaction transaction)
         {
-            var notice = new StringBuilder();
-            notice.AppendLine("Islamic Finance Compliance Notice");
-            notice.AppendLine("--------------------------------");
+            var notice = await ValidateTransaction(transaction) 
+                ? "This transaction complies with Islamic finance principles."
+                : "This transaction may not comply with Islamic finance principles.";
 
-            // Add Zakat information if applicable
-            var zakatAmount = CalculateZakat(transaction.TotalAmount);
-            if (zakatAmount > 0)
-            {
-                notice.AppendLine($"Zakat Applicable: {zakatAmount:C}");
-            }
-
-            // Add profit sharing information
-            var (merchantShare, partnerShare) = CalculateProfitSharing(transaction.TotalAmount);
-            notice.AppendLine($"Profit Distribution:");
-            notice.AppendLine($"- Merchant Share: {merchantShare:C}");
-            notice.AppendLine($"- Partner Share: {partnerShare:C}");
-
-            return notice.ToString();
+            return notice;
         }
 
         public async Task<bool> ValidateFinancialPeriod(DateTime startDate, DateTime endDate)
         {
             // Implement financial period validation logic
-            // This could include checking against Islamic calendar
-            // or specific financial rules
-            return true; // Placeholder implementation
+            return true;
         }
     }
 }
