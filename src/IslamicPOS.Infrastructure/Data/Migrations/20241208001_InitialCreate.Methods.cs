@@ -3,9 +3,9 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace IslamicPOS.Infrastructure.Data.Migrations;
 
-public partial class InitialCreate : Migration
+public partial class InitialCreate
 {
-    protected override void UpInitialCreate(MigrationBuilder migrationBuilder)
+    partial void UpInitialCreate(MigrationBuilder migrationBuilder)
     {
         // Mudarabah Contracts Table
         migrationBuilder.CreateTable(
@@ -54,7 +54,7 @@ public partial class InitialCreate : Migration
             column: "InvestorId");
     }
 
-    protected override void DownInitialCreate(MigrationBuilder migrationBuilder)
+    partial void DownInitialCreate(MigrationBuilder migrationBuilder)
     {
         migrationBuilder.DropTable(name: "ZakaatCalculations");
         migrationBuilder.DropTable(name: "MudarabahContracts");
