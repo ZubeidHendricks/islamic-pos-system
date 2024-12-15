@@ -1,39 +1,10 @@
-using IslamicPOS.Domain.ValueObjects;
+using IslamicPOS.Core.Finance;
 
-namespace IslamicPOS.Domain.Finance.Interfaces
+namespace IslamicPOS.Domain.Finance.Interfaces;
+
+public interface IIslamicFinanceService
 {
-    public interface IIslamicFinanceService
-    {
-        Task<ZakaatCalculation> CalculateZakaat(ZakaatParameters parameters);
-        Task<MudarabahContract> CreateMudarabahContract(MudarabahParameters parameters);
-        Task<MusharakahContract> CreateMusharakahContract(MusharakahParameters parameters);
-        Task<IslamicFinanceOptions> GetFinanceOptions();
-    }
-
-    public record ZakaatParameters(
-        Money TotalAssets,
-        Money Liabilities,
-        Money BusinessAssets,
-        Money Investments
-    );
-
-    public record MudarabahParameters(
-        string InvestorId,
-        string ManagerId,
-        Money InvestmentAmount,
-        decimal ProfitSharingRatio,
-        int TermInMonths
-    );
-
-    public record MusharakahParameters(
-        List<PartnerContribution> PartnerContributions,
-        Money TotalCapital,
-        int TermInMonths
-    );
-
-    public record PartnerContribution(
-        string PartnerId,
-        Money ContributionAmount,
-        decimal OwnershipPercentage
-    );
+    Task<ZakaatCalculation> CalculateZakaat(decimal amount, string currency);
+    Task<MudarabahContract> CreateMudarabahContract(decimal investment, decimal profitShare, string investor, string project);
+    Task<MusharakahContract> CreateMusharakahContract(decimal partner1Investment, decimal partner2Investment, decimal partner1Share, decimal partner2Share, string project);
 }

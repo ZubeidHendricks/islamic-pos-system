@@ -1,66 +1,70 @@
-using IslamicPOS.Domain.Common;
+using IslamicPOS.Core.Common;
 
-namespace IslamicPOS.Domain.Inventory
+namespace IslamicPOS.Domain.Inventory;
+
+public class Product : Entity
 {
-    public class Product : AuditableEntity
+    public string Name { get; private set; }
+    public string Code { get; private set; }
+    public Money Price { get; private set; }
+    public bool IsHalal { get; private set; }
+    public string Category { get; private set; }
+    public bool IsActive { get; private set; }
+
+    private Product(
+        string name,
+        string code,
+        Money price,
+        string category,
+        bool isHalal = true)
     {
-        public string Name { get; private set; } = string.Empty;
-        public string SKU { get; private set; } = string.Empty;
-        public string Description { get; private set; } = string.Empty;
-        public Money Price { get; private set; }
-        public int StockLevel { get; private set; }
-        public int MinimumStockLevel { get; private set; }
-        public bool IsHalal { get; private set; }
-        public string HalalCertification { get; private set; } = string.Empty;
-        public int CategoryId { get; private set; }
-        public ProductCategory Category { get; private set; } = null!;
+        Name = name;
+        Code = code;
+        Price = price;
+        Category = category;
+        IsHalal = isHalal;
+        IsActive = true;
+    }
 
-        private Product() { } // For EF Core
+    public static Product Create(
+        string name,
+        string code,
+        Money price,
+        string category,
+        bool isHalal = true)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            throw new ArgumentException("Product name is required", nameof(name));
 
-        private Product(string name, string sku, string description, Money price, 
-            int minimumStockLevel, bool isHalal, string halalCertification, ProductCategory category)
-        {
-            Name = name;
-            SKU = sku;
-            Description = description;
-            Price = price;
-            MinimumStockLevel = minimumStockLevel;
-            IsHalal = isHalal;
-            HalalCertification = halalCertification;
-            Category = category;
-            CategoryId = category.Id;
-            StockLevel = 0;
-        }
+        if (string.IsNullOrWhiteSpace(code))
+            throw new ArgumentException("Product code is required", nameof(code));
 
-        public static Product Create(string name, string sku, string description, Money price,
-            int minimumStockLevel, bool isHalal, string halalCertification, ProductCategory category)
-        {
-            if (string.IsNullOrWhiteSpace(name))
-                throw new ArgumentException("Product name cannot be empty", nameof(name));
+        return new Product(name, code, price, category, isHalal);
+    }
 
-            if (string.IsNullOrWhiteSpace(sku))
-                throw new ArgumentException("SKU cannot be empty", nameof(sku));
+    public void UpdatePrice(Money newPrice)
+    {
+        if (!IsActive)
+            throw new InvalidOperationException("Cannot update price of inactive product");
 
-            if (isHalal && string.IsNullOrWhiteSpace(halalCertification))
-                throw new ArgumentException("Halal certification is required for halal products", nameof(halalCertification));
+        Price = newPrice;
+    }
 
-            return new Product(name, sku, description, price, minimumStockLevel, isHalal, halalCertification, category);
-        }
+    public void UpdateHalalStatus(bool isHalal)
+    {
+        IsHalal = isHalal;
+        UpdatedAt = DateTime.UtcNow;
+    }
 
-        public void UpdateStock(int quantity)
-        {
-            if (StockLevel + quantity < 0)
-                throw new InvalidOperationException("Cannot reduce stock below zero");
+    public void Deactivate()
+    {
+        IsActive = false;
+        UpdatedAt = DateTime.UtcNow;
+    }
 
-            StockLevel += quantity;
-        }
-
-        public void UpdatePrice(Money newPrice)
-        {
-            if (newPrice.Amount <= 0)
-                throw new ArgumentException("Price must be greater than zero", nameof(newPrice));
-
-            Price = newPrice;
-        }
+    public void Reactivate()
+    {
+        IsActive = true;
+        UpdatedAt = DateTime.UtcNow;
     }
 }

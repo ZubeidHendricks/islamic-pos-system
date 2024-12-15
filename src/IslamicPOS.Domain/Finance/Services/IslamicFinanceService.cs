@@ -1,110 +1,81 @@
-using IslamicPOS.Domain.Common;
-using IslamicPOS.Domain.ValueObjects;
+using IslamicPOS.Core.Common;
+using IslamicPOS.Core.Finance;
+using IslamicPOS.Domain.Finance.Interfaces;
 
-namespace IslamicPOS.Domain.Finance.Services
+namespace IslamicPOS.Domain.Finance.Services;
+
+public class IslamicFinanceService : IIslamicFinanceService
 {
-    public class IslamicFinanceService : IIslamicFinanceService
+    private readonly IConfiguration _configuration;
+    private readonly ILogger<IslamicFinanceService> _logger;
+
+    public IslamicFinanceService(
+        IConfiguration configuration,
+        ILogger<IslamicFinanceService> logger)
     {
-        private readonly IslamicFinanceOptions _options;
+        _configuration = configuration;
+        _logger = logger;
+    }
 
-        public IslamicFinanceService(IslamicFinanceOptions options)
+    public async Task<ZakaatCalculation> CalculateZakaat(decimal amount, string currency)
+    {
+        try
         {
-            _options = options;
+            var money = Money.Create(amount, currency);
+            return ZakaatCalculation.Create(
+                businessAssets: money,
+                cashAndEquivalents: Money.Create(0, currency));
         }
-
-        public bool ValidateTransaction(Transaction transaction)
+        catch (Exception ex)
         {
-            // Check if transaction type is Halal
-            if (!IsHalalTransaction(transaction))
-                return false;
-
-            // Validate payment method
-            if (!IsValidPaymentMethod(transaction.PaymentMethod))
-                return false;
-
-            return true;
-        }
-
-        public bool IsHalalTransaction(Transaction transaction)
-        {
-            // Check for prohibited items
-            foreach (var item in transaction.Items)
-            {
-                if (item.Product.IsHaram)
-                    return false;
-            }
-
-            // Check for riba (interest)
-            if (transaction.InterestRate > 0)
-                return false;
-
-            return true;
-        }
-
-        public bool IsValidPaymentMethod(PaymentMethod method)
-        {
-            // Validate according to Islamic principles
-            switch (method)
-            {
-                case PaymentMethod.Cash:
-                case PaymentMethod.BankTransfer:
-                case PaymentMethod.DigitalWallet:
-                    return true;
-                case PaymentMethod.IslamicCredit: // Special Islamic credit card
-                    return true;
-                case PaymentMethod.ConventionalCredit: // Regular credit cards might involve riba
-                    return false;
-                default:
-                    return false;
-            }
-        }
-
-        public decimal CalculateZakat(Money amount)
-        {
-            if (amount < _options.NisabThreshold)
-                return 0;
-
-            return amount.Amount * _options.ZakaatRate;
-        }
-
-        public (decimal merchantShare, decimal partnerShare) CalculateProfitSharing(decimal totalProfit)
-        {
-            decimal merchantShare = totalProfit * _options.DefaultProfitSharingRatio;
-            decimal partnerShare = totalProfit - merchantShare;
-            return (merchantShare, partnerShare);
-        }
-
-        public bool ValidateFinancingTerm(int months)
-        {
-            return months <= _options.FinancingTermInMonths;
-        }
-
-        public string GetComplianceNotice(Transaction transaction)
-        {
-            if (!ValidateTransaction(transaction))
-                return "This transaction may not comply with Islamic finance principles.";
-
-            var notice = new StringBuilder();
-            notice.AppendLine("This transaction complies with Islamic finance principles.");
-            
-            if (transaction.Amount >= _options.NisabThreshold)
-            {
-                decimal zakat = CalculateZakat(transaction.Amount);
-                notice.AppendLine($"Zakat applicable: {zakat:C}");
-            }
-
-            return notice.ToString();
+            _logger.LogError(ex, "Error calculating zakat");
+            throw;
         }
     }
 
-    public interface IIslamicFinanceService
+    public async Task<MudarabahContract> CreateMudarabahContract(
+        decimal investment,
+        decimal profitShare,
+        string investor,
+        string project)
     {
-        bool ValidateTransaction(Transaction transaction);
-        bool IsHalalTransaction(Transaction transaction);
-        bool IsValidPaymentMethod(PaymentMethod method);
-        decimal CalculateZakat(Money amount);
-        (decimal merchantShare, decimal partnerShare) CalculateProfitSharing(decimal totalProfit);
-        bool ValidateFinancingTerm(int months);
-        string GetComplianceNotice(Transaction transaction);
+        try
+        {
+            return MudarabahContract.Create(
+                investmentAmount: Money.Create(investment),
+                profitSharingRatio: profitShare,
+                investorDetails: investor,
+                projectDetails: project,
+                startDate: DateTime.UtcNow);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating Mudarabah contract");
+            throw;
+        }
+    }
+
+    public async Task<MusharakahContract> CreateMusharakahContract(
+        decimal partner1Investment,
+        decimal partner2Investment,
+        decimal partner1Share,
+        decimal partner2Share,
+        string project)
+    {
+        try
+        {
+            return MusharakahContract.Create(
+                partner1Investment: Money.Create(partner1Investment),
+                partner2Investment: Money.Create(partner2Investment),
+                partner1Share: partner1Share,
+                partner2Share: partner2Share,
+                projectDetails: project,
+                startDate: DateTime.UtcNow);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating Musharakah contract");
+            throw;
+        }
     }
 }
