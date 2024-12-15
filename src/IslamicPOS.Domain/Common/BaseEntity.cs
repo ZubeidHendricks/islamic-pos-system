@@ -1,11 +1,8 @@
-namespace IslamicPOS.Domain.Common
+namespace IslamicPOS.Domain.Common;
+
+public abstract class BaseEntity
 {
-    public abstract class BaseEntity
-    {
-        public int Id { get; protected set; }
-        public DateTime Created { get; set; }
-        public string CreatedBy { get; set; } = string.Empty;
-        public DateTime? LastModified { get; set; }
-        public string LastModifiedBy { get; set; } = string.Empty;
-    }
+    public Guid Id { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
 }
