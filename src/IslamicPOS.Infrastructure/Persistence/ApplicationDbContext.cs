@@ -4,6 +4,7 @@ using IslamicPOS.Domain.Common;
 using IslamicPOS.Domain.Inventory;
 using IslamicPOS.Domain.Sales;
 using IslamicPOS.Domain.Finance;
+using System.Reflection;
 
 namespace IslamicPOS.Infrastructure.Persistence;
 
@@ -12,6 +13,8 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<Product> Products { get; set; }
     public DbSet<Sale> Sales { get; set; }
     public DbSet<Transaction> Transactions { get; set; }
+    public DbSet<MudarabahContract> MudarabahContracts { get; set; }
+    public DbSet<ZakaatCalculation> ZakaatCalculations { get; set; }
 
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
         : base(options)
@@ -21,6 +24,8 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-        // Add any additional configuration
+
+        // Apply configurations from the current assembly
+        modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
     }
 }
