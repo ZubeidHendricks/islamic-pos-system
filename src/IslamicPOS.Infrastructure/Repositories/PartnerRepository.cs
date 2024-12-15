@@ -1,42 +1,21 @@
-using IslamicPOS.Domain.Finance;
+using IslamicPOS.Domain.Entities;
 using IslamicPOS.Domain.Repositories;
-using IslamicPOS.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 namespace IslamicPOS.Infrastructure.Repositories;
 
-public class PartnerRepository : BaseRepository, IPartnerRepository
+public class PartnerRepository : IPartnerRepository
 {
-    public PartnerRepository(ApplicationDbContext context) : base(context) { }
+    private readonly ApplicationDbContext _context;
 
-    public async Task<Partner> GetByIdAsync(Guid id)
+    public PartnerRepository(ApplicationDbContext context)
     {
-        return await _context.Set<Partner>().FindAsync(id);
+        _context = context;
     }
 
-    public async Task<List<Partner>> GetAllAsync()
+    public async Task<Partner?> GetByIdAsync(int id)
     {
-        return await _context.Set<Partner>().ToListAsync();
-    }
-
-    public async Task AddAsync(Partner partner)
-    {
-        await _context.Set<Partner>().AddAsync(partner);
-        await _context.SaveChangesAsync();
-    }
-
-    public async Task UpdateAsync(Partner partner)
-    {
-        _context.Set<Partner>().Update(partner);
-        await _context.SaveChangesAsync();
-    }
-
-    public async Task DeleteAsync(Guid id)
-    {
-        var partner = await GetByIdAsync(id);
-        if (partner != null)
-        {
-            _context.Set<Partner>().Remove(partner);
-            await _context.SaveChangesAsync();
-        }
+        return await _context.Partners
+            .FirstOrDefaultAsync(p => p.Id == id);
     }
 }

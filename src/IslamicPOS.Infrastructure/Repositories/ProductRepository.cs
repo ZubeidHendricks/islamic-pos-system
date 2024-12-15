@@ -1,42 +1,22 @@
-using IslamicPOS.Domain.Inventory;
+using IslamicPOS.Domain.Entities;
 using IslamicPOS.Domain.Repositories;
-using IslamicPOS.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 namespace IslamicPOS.Infrastructure.Repositories;
 
-public class ProductRepository : BaseRepository, IProductRepository
+public class ProductRepository : IProductRepository
 {
-    public ProductRepository(ApplicationDbContext context) : base(context) { }
+    private readonly ApplicationDbContext _context;
 
-    public async Task<Product> GetByIdAsync(Guid id)
+    public ProductRepository(ApplicationDbContext context)
     {
-        return await _context.Set<Product>().FindAsync(id);
+        _context = context;
     }
 
-    public async Task<List<Product>> GetAllAsync()
+    public async Task<Product?> GetByIdAsync(int id)
     {
-        return await _context.Set<Product>().ToListAsync();
-    }
-
-    public async Task AddAsync(Product product)
-    {
-        await _context.Set<Product>().AddAsync(product);
-        await _context.SaveChangesAsync();
-    }
-
-    public async Task UpdateAsync(Product product)
-    {
-        _context.Set<Product>().Update(product);
-        await _context.SaveChangesAsync();
-    }
-
-    public async Task DeleteAsync(Guid id)
-    {
-        var product = await GetByIdAsync(id);
-        if (product != null)
-        {
-            _context.Set<Product>().Remove(product);
-            await _context.SaveChangesAsync();
-        }
+        return await _context.Products
+            .Include(p => p.Category)
+            .FirstOrDefaultAsync(p => p.Id == id);
     }
 }
