@@ -1,66 +1,55 @@
+using IslamicPOS.Domain.Sales;
+using IslamicPOS.Domain.Common.Models;
+using IslamicPOS.Domain.Repositories;
+using IslamicPOS.Infrastructure.Persistence;
+
 namespace IslamicPOS.Infrastructure.Repositories;
 
-public class SaleRepository : BaseRepository<Sale>, ISaleRepository
+public class SaleRepository : BaseRepository, ISaleRepository
 {
-    public SaleRepository(ApplicationDbContext context) : base(context)
+    public SaleRepository(ApplicationDbContext context) : base(context) { }
+
+    public async Task<Sale> GetByIdAsync(Guid id)
     {
+        return await _context.Set<Sale>().FindAsync(id);
     }
 
-    public async Task<IEnumerable<Sale>> GetByDateRangeAsync(
-        DateTime startDate,
-        DateTime endDate)
+    public async Task<List<Sale>> GetAllAsync()
     {
-        return await _dbSet
-            .Include(s => s.Items)
-            .Where(s => s.Date >= startDate && s.Date <= endDate)
-            .OrderByDescending(s => s.Date)
-            .ToListAsync();
+        return await _context.Set<Sale>().ToListAsync();
     }
 
-    public async Task<decimal> GetTotalSalesAsync(DateTime date)
+    public async Task AddAsync(Sale sale)
     {
-        return await _dbSet
-            .Where(s => s.Date.Date == date.Date)
-            .SumAsync(s => s.Total);
+        await _context.Set<Sale>().AddAsync(sale);
+        await _context.SaveChangesAsync();
     }
 
-    public async Task<IEnumerable<SalesByProduct>> GetTopProductsAsync(
-        DateTime startDate,
-        DateTime endDate,
-        int count = 10)
+    public async Task UpdateAsync(Sale sale)
     {
-        return await _dbSet
-            .Where(s => s.Date >= startDate && s.Date <= endDate)
-            .SelectMany(s => s.Items)
-            .GroupBy(i => new { i.ProductId, i.ProductName })
-            .Select(g => new SalesByProduct
-            {
-                ProductId = g.Key.ProductId,
-                ProductName = g.Key.ProductName,
-                Quantity = g.Sum(i => i.Quantity),
-                Revenue = g.Sum(i => i.Total)
-            })
-            .OrderByDescending(x => x.Revenue)
-            .Take(count)
-            .ToListAsync();
+        _context.Set<Sale>().Update(sale);
+        await _context.SaveChangesAsync();
     }
 
-    public async Task<SaleSummary> GetDailySummaryAsync(DateTime date)
+    public async Task DeleteAsync(Guid id)
     {
-        var sales = await _dbSet
-            .Include(s => s.Items)
-            .Where(s => s.Date.Date == date.Date)
-            .ToListAsync();
-
-        return new SaleSummary
+        var sale = await GetByIdAsync(id);
+        if (sale != null)
         {
-            Date = date,
-            TotalSales = sales.Sum(s => s.Total),
-            TransactionCount = sales.Count,
-            ItemsSold = sales.Sum(s => s.Items.Sum(i => i.Quantity)),
-            AverageTransactionValue = sales.Any() 
-                ? sales.Average(s => s.Total) 
-                : 0
-        };
+            _context.Set<Sale>().Remove(sale);
+            await _context.SaveChangesAsync();
+        }
+    }
+
+    public async Task<List<SalesByProduct>> GetSalesByProductAsync()
+    {
+        // Implement sales by product logic
+        return new List<SalesByProduct>();
+    }
+
+    public async Task<SaleSummary> GetSalesSummaryAsync()
+    {
+        // Implement sales summary logic
+        return new SaleSummary();
     }
 }
