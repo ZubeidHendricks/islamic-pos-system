@@ -7,7 +7,6 @@ global using IslamicPOS.Domain.Sales;
 global using IslamicPOS.Domain.Finance.Models;
 global using IslamicPOS.Domain.Logistics;
 global using IslamicPOS.Domain.Finance.Interfaces;
-global using IslamicPOS.Domain.Finance;
 global using IslamicPOS.Application.Common.Interfaces;
 global using System.IdentityModel.Tokens.Jwt;
 global using Microsoft.IdentityModel.Tokens;
