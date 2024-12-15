@@ -1,12 +1,10 @@
-﻿global using Microsoft.EntityFrameworkCore;
+global using Microsoft.EntityFrameworkCore;
 global using Microsoft.Extensions.Logging;
 global using Microsoft.Extensions.Configuration;
 global using IslamicPOS.Domain.Common;
-global using IslamicPOS.Domain.Models;
-global using IslamicPOS.Domain.Models.Sales;
-global using IslamicPOS.Domain.Models.Financial;
-global using IslamicPOS.Domain.Models.Products;
-global using IslamicPOS.Domain.Models.Logistics;
+global using IslamicPOS.Domain.Inventory.Models;
+global using IslamicPOS.Domain.Sales.Models;
 global using IslamicPOS.Domain.Finance.Models;
+global using IslamicPOS.Domain.Logistics.Models;
 global using IslamicPOS.Domain.Finance.Interfaces;
 global using IslamicPOS.Application.Common.Interfaces;
