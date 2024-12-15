@@ -1,3 +1,7 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using IslamicPOS.Domain.Logistics;
+
 namespace IslamicPOS.Infrastructure.Data.Configurations;
 
 public class DeliveryPointConfiguration : IEntityTypeConfiguration<DeliveryPoint>
@@ -12,21 +16,6 @@ public class DeliveryPointConfiguration : IEntityTypeConfiguration<DeliveryPoint
 
         builder.Property(e => e.Address)
             .IsRequired()
-            .HasMaxLength(200);
-
-        builder.Property(e => e.ContactPerson)
-            .HasMaxLength(100);
-
-        builder.Property(e => e.ContactPhone)
-            .HasMaxLength(20);
-
-        builder.Property(e => e.SpecialInstructions)
             .HasMaxLength(500);
-
-        builder.OwnsOne(e => e.DeliveryWindow, w =>
-        {
-            w.Property(p => p.Start).HasColumnName("DeliveryWindowStart");
-            w.Property(p => p.End).HasColumnName("DeliveryWindowEnd");
-        });
     }
 }
