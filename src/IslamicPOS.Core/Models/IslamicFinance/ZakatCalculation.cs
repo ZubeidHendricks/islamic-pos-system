@@ -1,37 +1,40 @@
+using IslamicPOS.Core.Models.Common;
+
 namespace IslamicPOS.Core.Models.IslamicFinance;
 
 public class ZakatCalculation : Entity
 {
-    public decimal BusinessAssets { get; private set; }
-    public decimal CashAndEquivalents { get; private set; }
-    public decimal Inventory { get; private set; }
-    public decimal AccountsReceivable { get; private set; }
-    public decimal Liabilities { get; private set; }
-    public decimal TotalZakatableAmount { get; private set; }
-    public decimal ZakatPayable { get; private set; }
+    public Money BusinessAssets { get; private set; }
+    public Money CashAndEquivalents { get; private set; }
+    public Money TotalZakatableAmount { get; private set; }
+    public Money ZakatPayable { get; private set; }
     public DateTime CalculationDate { get; private set; }
-
-    public ZakatCalculation(
-        decimal businessAssets,
-        decimal cashAndEquivalents,
-        decimal inventory,
-        decimal accountsReceivable,
-        decimal liabilities,
+    
+    private ZakatCalculation(
+        Money businessAssets,
+        Money cashAndEquivalents,
         DateTime calculationDate)
     {
         BusinessAssets = businessAssets;
         CashAndEquivalents = cashAndEquivalents;
-        Inventory = inventory;
-        AccountsReceivable = accountsReceivable;
-        Liabilities = liabilities;
         CalculationDate = calculationDate;
-
         CalculateZakat();
+    }
+
+    public static ZakatCalculation Create(
+        Money businessAssets,
+        Money cashAndEquivalents)
+    {
+        return new ZakatCalculation(
+            businessAssets,
+            cashAndEquivalents,
+            DateTime.UtcNow);
     }
 
     private void CalculateZakat()
     {
-        TotalZakatableAmount = BusinessAssets + CashAndEquivalents + Inventory + AccountsReceivable - Liabilities;
-        ZakatPayable = Math.Max(0, TotalZakatableAmount * 0.025m); // 2.5% is the standard zakat rate
+        var totalAmount = BusinessAssets.Add(CashAndEquivalents);
+        TotalZakatableAmount = totalAmount;
+        ZakatPayable = Money.Create(totalAmount.Amount * 0.025m, totalAmount.Currency); // 2.5% standard zakat rate
     }
 }

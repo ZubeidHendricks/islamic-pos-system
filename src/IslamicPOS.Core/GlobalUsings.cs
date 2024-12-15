@@ -8,3 +8,6 @@ global using System.Threading.Tasks;
 global using Microsoft.Extensions.Configuration;
 global using Microsoft.Extensions.DependencyInjection;
 global using Microsoft.Extensions.Logging;
+
+// Project namespaces
+using IslamicPOS.Core.Models.Common;

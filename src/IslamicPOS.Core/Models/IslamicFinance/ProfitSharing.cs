@@ -1,3 +1,5 @@
+using IslamicPOS.Core.Models.Common;
+
 namespace IslamicPOS.Core.Models.IslamicFinance;
 
 public class ProfitSharing : Entity
@@ -7,21 +9,25 @@ public class ProfitSharing : Entity
     public Money MerchantAmount { get; private set; }
     public Money PartnerAmount { get; private set; }
 
-    public ProfitSharing(Money totalAmount, decimal merchantShare)
+    private ProfitSharing(Money totalAmount, decimal merchantShare)
     {
         if (merchantShare is < 0 or > 1)
-            throw new ArgumentException("Merchant share must be between 0 and 1", nameof(merchantShare));
+            throw new ArgumentException("Merchant share must be between 0 and 1");
 
         TotalAmount = totalAmount;
         MerchantShare = merchantShare;
-
         CalculateShares();
+    }
+
+    public static ProfitSharing Create(Money totalAmount, decimal merchantShare)
+    {
+        return new ProfitSharing(totalAmount, merchantShare);
     }
 
     private void CalculateShares()
     {
         MerchantAmount = Money.Create(
-            TotalAmount.Amount * MerchantShare, 
+            TotalAmount.Amount * MerchantShare,
             TotalAmount.Currency);
 
         PartnerAmount = Money.Create(
