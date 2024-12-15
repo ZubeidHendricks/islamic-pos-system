@@ -1,4 +1,4 @@
-﻿using IslamicPOS.Domain.Common;
+using IslamicPOS.Domain.Common;
 
 namespace IslamicPOS.Domain.Sales;
 
@@ -31,7 +31,8 @@ public class Sale : EntityBase
         var total = Money.Zero(Items.First().UnitPrice.Currency);
         foreach (var item in Items)
         {
-            total += new Money(item.UnitPrice.Amount * item.Quantity, item.UnitPrice.Currency);
+            // Use Amount property for addition
+            total = new Money(total.Amount + (item.UnitPrice.Amount * item.Quantity), item.UnitPrice.Currency);
         }
         TotalAmount = total;
     }
