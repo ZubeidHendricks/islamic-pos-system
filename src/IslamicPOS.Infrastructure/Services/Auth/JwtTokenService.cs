@@ -7,5 +7,9 @@ namespace IslamicPOS.Infrastructure.Services.Auth;
 
 public class JwtTokenService
 {
-    // Implement JWT token generation and validation
+    public string GenerateToken()
+    {
+        // Implement token generation
+        return string.Empty;
+    }
 }

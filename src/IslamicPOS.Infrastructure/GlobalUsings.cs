@@ -1,4 +1,4 @@
-﻿global using Microsoft.EntityFrameworkCore;
+global using Microsoft.EntityFrameworkCore;
 global using Microsoft.Extensions.Logging;
 global using Microsoft.Extensions.Configuration;
 global using IslamicPOS.Domain.Common;
@@ -9,3 +9,4 @@ global using IslamicPOS.Domain.Logistics;
 global using IslamicPOS.Domain.Finance.Interfaces;
 global using IslamicPOS.Application.Common.Interfaces;
 global using System.IdentityModel.Tokens.Jwt;
+global using Microsoft.IdentityModel.Tokens;
