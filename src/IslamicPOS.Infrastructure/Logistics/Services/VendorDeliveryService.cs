@@ -1,5 +1,6 @@
 using IslamicPOS.Domain.Common;
 using IslamicPOS.Domain.Logistics;
+using Microsoft.Extensions.Logging;
 
 namespace IslamicPOS.Infrastructure.Logistics.Services;
 
@@ -14,5 +15,5 @@ public class VendorDeliveryService
         _routeService = routeService;
     }
 
-    // Implement vendor delivery logic
+    // Implement vendor delivery service methods
 }
