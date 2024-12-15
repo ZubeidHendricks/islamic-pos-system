@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using IslamicPOS.Domain.Inventory;
 
@@ -8,13 +8,10 @@ public class StockMovementConfiguration : IEntityTypeConfiguration<StockMovement
 {
     public void Configure(EntityTypeBuilder<StockMovement> builder)
     {
-        builder.HasKey(e => e.Id);
-
-        builder.Property(e => e.Quantity)
-            .IsRequired();
-
-        builder.HasOne(sm => sm.Product)
-            .WithMany(p => p.StockMovements)
-            .HasForeignKey(sm => sm.ProductId);
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.Quantity).IsRequired();
+        builder.HasOne(x => x.Product)
+            .WithMany()
+            .HasForeignKey(x => x.ProductId);
     }
 }
