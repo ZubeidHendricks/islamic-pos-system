@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace IslamicPOS.Infrastructure.Data.Migrations;
 
-public class InitialSchema : Migration
+public partial class InitialSchema : Migration
 {
     protected override void Up(MigrationBuilder migrationBuilder)
     {
