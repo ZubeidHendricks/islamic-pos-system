@@ -1,4 +1,4 @@
-using IslamicPOS.Core.Logistics.Models;
+﻿using IslamicPOS.Domain.Logistics.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

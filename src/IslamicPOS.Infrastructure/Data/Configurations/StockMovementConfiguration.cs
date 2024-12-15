@@ -1,6 +1,6 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using IslamicPOS.Core.Models;
+using IslamicPOS.Domain.Models;
 
 namespace IslamicPOS.Infrastructure.Data.Configurations;
 

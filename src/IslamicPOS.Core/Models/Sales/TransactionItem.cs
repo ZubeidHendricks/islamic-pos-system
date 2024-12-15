@@ -1,3 +1,4 @@
+﻿using IslamicPOS.Core.Common;
 using IslamicPOS.Core.Models.Common;
 using IslamicPOS.Core.Models.Products;
 

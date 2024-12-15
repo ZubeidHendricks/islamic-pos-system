@@ -1,3 +1,4 @@
+﻿using IslamicPOS.Core.Common;
 using IslamicPOS.Core.Models.Common;
 
 namespace IslamicPOS.Core.Models.IslamicFinance;
