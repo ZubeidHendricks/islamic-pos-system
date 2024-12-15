@@ -1,6 +1,4 @@
 using System;
-using System.IdentityModel.Tokens.Jwt;
-using Microsoft.IdentityModel.Tokens;
 using IslamicPOS.Domain.Common;
 
 namespace IslamicPOS.Infrastructure.Services.Auth;
