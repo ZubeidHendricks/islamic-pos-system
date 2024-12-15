@@ -1,62 +1,44 @@
-using IslamicPOS.Domain.Finance;
-using IslamicPOS.Domain.ValueObjects;
-using IslamicPOS.Infrastructure.Data;
+﻿using IslamicPOS.Domain.Common;
+using IslamicPOS.Domain.Finance.Models;
+using IslamicPOS.Domain.Finance.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using IslamicPOS.Application.Common.Interfaces;
 
-namespace IslamicPOS.Application.Services
+namespace IslamicPOS.Application.Services;
+
+public class ZakaatCalculationService : IZakaatService
 {
-    public class ZakaatCalculationService
+    private readonly IApplicationDbContext _context;
+
+    public ZakaatCalculationService(IApplicationDbContext context)
     {
-        private readonly ApplicationDbContext _context;
-
-        public ZakaatCalculationService(ApplicationDbContext context)
-        {
-            _context = context;
-        }
-
-        public async Task<ZakaatCalculation> CalculateZakaat(ZakaatInput input)
-        {
-            var financeOptions = await _context.FinanceOptions
-                .OrderByDescending(o => o.Created)
-                .FirstAsync();
-
-            var totalWealth = new Money(
-                input.CashOnHand +
-                input.BankBalance +
-                input.GoldValue +
-                input.SilverValue +
-                input.StockValue +
-                input.BusinessAssets +
-                input.Investments -
-                input.Debts,
-                input.Currency);
-
-            var calculation = new ZakaatCalculation
-            {
-                TotalWealth = totalWealth,
-                NisabThreshold = financeOptions.NisabThreshold,
-                ZakaatAmount = totalWealth.Multiply(financeOptions.ZakaatRate),
-                IsZakaatDue = totalWealth.Amount >= financeOptions.NisabThreshold.Amount,
-                CalculationDate = DateTime.UtcNow
-            };
-
-            _context.ZakaatCalculations.Add(calculation);
-            await _context.SaveChangesAsync();
-
-            return calculation;
-        }
+        _context = context;
     }
 
-    public class ZakaatInput
+    public async Task<ZakaatCalculation> CalculateZakaat(ZakaatInput input)
     {
-        public decimal CashOnHand { get; set; }
-        public decimal BankBalance { get; set; }
-        public decimal GoldValue { get; set; }
-        public decimal SilverValue { get; set; }
-        public decimal StockValue { get; set; }
-        public decimal BusinessAssets { get; set; }
-        public decimal Investments { get; set; }
-        public decimal Debts { get; set; }
-        public string Currency { get; set; } = "USD";
+        var calculation = new ZakaatCalculation(
+            input.Assets,
+            input.Liabilities,
+            input.BusinessAssets,
+            input.Investments);
+
+        _context.ZakaatCalculations.Add(calculation);
+        await _context.SaveChangesAsync();
+
+        return calculation;
+    }
+
+    public async Task<ZakaatCalculation?> GetZakaatCalculation(Guid id)
+    {
+        return await _context.ZakaatCalculations.FindAsync(id);
+    }
+
+    public async Task<List<ZakaatCalculation>> GetZakaatHistory(string userId)
+    {
+        return await _context.ZakaatCalculations
+            .OrderByDescending(x => x.CreatedAt)
+            .Take(10)
+            .ToListAsync();
     }
 }

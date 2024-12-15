@@ -1,34 +1,37 @@
-using IslamicPOS.Application.Common.Models;
-using IslamicPOS.Domain.Finance;
+﻿using IslamicPOS.Domain.Common;
+using IslamicPOS.Domain.Finance.Models;
+using IslamicPOS.Application.Common.Interfaces;
 using MediatR;
 
-namespace IslamicPOS.Application.Finance.Commands.CalculateZakaat
+namespace IslamicPOS.Application.Finance.Commands.CalculateZakaat;
+
+public record CalculateZakaatCommand : IRequest<ZakaatCalculation>
 {
-    public record CalculateZakaatCommand : IRequest<Result<ZakaatCalculation>>
+    public Money Assets { get; init; } = Money.Zero();
+    public Money Liabilities { get; init; } = Money.Zero();
+    public Money BusinessAssets { get; init; } = Money.Zero();
+    public Money Investments { get; init; } = Money.Zero();
+}
+
+public class CalculateZakaatCommandHandler : IRequestHandler<CalculateZakaatCommand, ZakaatCalculation>
+{
+    private readonly IApplicationDbContext _context;
+
+    public CalculateZakaatCommandHandler(IApplicationDbContext context)
     {
-        public ZakaatInput Input { get; init; } = null!;
+        _context = context;
     }
 
-    public class CalculateZakaatCommandHandler : IRequestHandler<CalculateZakaatCommand, Result<ZakaatCalculation>>
+    public async Task<ZakaatCalculation> Handle(CalculateZakaatCommand request, CancellationToken cancellationToken)
     {
-        private readonly IZakaatService _zakaatService;
+        var zakaat = new ZakaatCalculation(
+            request.Assets,
+            request.Liabilities,
+            request.BusinessAssets,
+            request.Investments);
 
-        public CalculateZakaatCommandHandler(IZakaatService zakaatService)
-        {
-            _zakaatService = zakaatService;
-        }
-
-        public async Task<Result<ZakaatCalculation>> Handle(CalculateZakaatCommand request, CancellationToken cancellationToken)
-        {
-            try
-            {
-                var calculation = _zakaatService.CalculateZakaat(request.Input);
-                return Result<ZakaatCalculation>.Success(calculation);
-            }
-            catch (Exception ex)
-            {
-                return Result<ZakaatCalculation>.Failure($"Failed to calculate Zakaat: {ex.Message}");
-            }
-        }
+        _context.ZakaatCalculations.Add(zakaat);
+        await _context.SaveChangesAsync(cancellationToken);
+        return zakaat;
     }
 }

@@ -1,122 +1,61 @@
-using IslamicPOS.Domain.Common;
-using IslamicPOS.Domain.Inventory;
-using IslamicPOS.Domain.ValueObjects;
+﻿using IslamicPOS.Domain.Common;
 
-namespace IslamicPOS.Domain.Sales
+namespace IslamicPOS.Domain.Sales;
+
+public class Sale : EntityBase
 {
-    public class Sale : AuditableEntity
+    public string ReferenceNumber { get; private set; } = string.Empty;
+    public DateTime SaleDate { get; private set; }
+    public Money TotalAmount { get; private set; } = Money.Zero();
+    public List<SaleItem> Items { get; private set; } = new();
+    public string CustomerId { get; private set; } = string.Empty;
+    public string Status { get; private set; } = string.Empty;
+    
+    private Sale() { } // For EF Core
+
+    public Sale(string customerId, List<SaleItem> items)
     {
-        public string InvoiceNumber { get; private set; } = string.Empty;
-        public DateTime SaleDate { get; private set; }
-        public Money TotalAmount { get; private set; }
-        public PaymentMethod PaymentMethod { get; private set; }
-        public PaymentStatus PaymentStatus { get; private set; }
-        public string CustomerName { get; private set; } = string.Empty;
-        public string CustomerPhone { get; private set; } = string.Empty;
-
-        private readonly List<SaleItem> _items = new();
-        public IReadOnlyList<SaleItem> Items => _items.AsReadOnly();
-
-        private Sale() { } // For EF Core
-
-        private Sale(string invoiceNumber, string customerName, string customerPhone, PaymentMethod paymentMethod)
-        {
-            InvoiceNumber = invoiceNumber;
-            CustomerName = customerName;
-            CustomerPhone = customerPhone;
-            PaymentMethod = paymentMethod;
-            SaleDate = DateTime.UtcNow;
-            PaymentStatus = PaymentStatus.Pending;
-            TotalAmount = Money.Zero("USD"); // Default currency, should be configurable
-        }
-
-        public static Sale Create(string invoiceNumber, string customerName, string customerPhone, PaymentMethod paymentMethod)
-        {
-            return new Sale(invoiceNumber, customerName, customerPhone, paymentMethod);
-        }
-
-        public void AddItem(Product product, int quantity, Money unitPrice)
-        {
-            if (quantity <= 0)
-                throw new ArgumentException("Quantity must be greater than zero", nameof(quantity));
-
-            if (PaymentStatus != PaymentStatus.Pending)
-                throw new InvalidOperationException("Cannot modify a completed sale");
-
-            var item = new SaleItem(product.Id, product.Name, quantity, unitPrice);
-            _items.Add(item);
-
-            RecalculateTotal();
-        }
-
-        public void RemoveItem(int productId)
-        {
-            if (PaymentStatus != PaymentStatus.Pending)
-                throw new InvalidOperationException("Cannot modify a completed sale");
-
-            var item = _items.FirstOrDefault(i => i.ProductId == productId);
-            if (item != null)
-            {
-                _items.Remove(item);
-                RecalculateTotal();
-            }
-        }
-
-        public void CompletePayment()
-        {
-            if (!_items.Any())
-                throw new InvalidOperationException("Cannot complete a sale with no items");
-
-            if (PaymentStatus != PaymentStatus.Pending)
-                throw new InvalidOperationException("Payment has already been processed");
-
-            PaymentStatus = PaymentStatus.Completed;
-        }
-
-        private void RecalculateTotal()
-        {
-            if (!_items.Any())
-            {
-                TotalAmount = Money.Zero("USD");
-                return;
-            }
-
-            var currency = _items.First().UnitPrice.Currency;
-            TotalAmount = _items.Aggregate(Money.Zero(currency),
-                (total, item) => total.Add(item.UnitPrice.Multiply(item.Quantity)));
-        }
+        CustomerId = customerId;
+        Items = items;
+        SaleDate = DateTime.UtcNow;
+        ReferenceNumber = GenerateReferenceNumber();
+        Status = "Created";
+        CalculateTotal();
     }
 
-    public enum PaymentMethod
+    private void CalculateTotal()
     {
-        Cash,
-        Card,
-        BankTransfer,
-        IslamicFinancing
-    }
+        if (!Items.Any())
+            return;
 
-    public enum PaymentStatus
-    {
-        Pending,
-        Completed,
-        Cancelled
-    }
-
-    public class SaleItem : Entity
-    {
-        public int ProductId { get; private set; }
-        public string ProductName { get; private set; }
-        public int Quantity { get; private set; }
-        public Money UnitPrice { get; private set; }
-
-        private SaleItem() { } // For EF Core
-
-        public SaleItem(int productId, string productName, int quantity, Money unitPrice)
+        var total = Money.Zero(Items.First().UnitPrice.Currency);
+        foreach (var item in Items)
         {
-            ProductId = productId;
-            ProductName = productName;
-            Quantity = quantity;
-            UnitPrice = unitPrice;
+            total += new Money(item.UnitPrice.Amount * item.Quantity, item.UnitPrice.Currency);
         }
+        TotalAmount = total;
     }
+
+    private string GenerateReferenceNumber()
+    {
+        return $"SALE-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString().Substring(0, 8).ToUpper()}";
+    }
+}
+
+public class SaleItem : EntityBase
+{
+    public string ProductId { get; private set; } = string.Empty;
+    public int Quantity { get; private set; }
+    public Money UnitPrice { get; private set; } = Money.Zero();
+    public string Notes { get; private set; } = string.Empty;
+
+    public SaleItem(string productId, int quantity, Money unitPrice, string notes = "")
+    {
+        ProductId = productId;
+        Quantity = quantity;
+        UnitPrice = unitPrice;
+        Notes = notes;
+    }
+
+    private SaleItem() { } // For EF Core
 }
