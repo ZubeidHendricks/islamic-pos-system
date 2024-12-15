@@ -5,7 +5,7 @@ namespace IslamicPOS.Infrastructure.Data.Migrations;
 
 public partial class InitialCreate : Migration
 {
-    protected override void Up(MigrationBuilder migrationBuilder)
+    protected override void UpInitialCreate(MigrationBuilder migrationBuilder)
     {
         // Mudarabah Contracts Table
         migrationBuilder.CreateTable(
@@ -54,7 +54,7 @@ public partial class InitialCreate : Migration
             column: "InvestorId");
     }
 
-    protected override void Down(MigrationBuilder migrationBuilder)
+    protected override void DownInitialCreate(MigrationBuilder migrationBuilder)
     {
         migrationBuilder.DropTable(name: "ZakaatCalculations");
         migrationBuilder.DropTable(name: "MudarabahContracts");
