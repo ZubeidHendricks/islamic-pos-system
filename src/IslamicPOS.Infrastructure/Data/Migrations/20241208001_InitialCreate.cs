@@ -1,3 +1,4 @@
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace IslamicPOS.Infrastructure.Data.Migrations;
@@ -6,85 +7,56 @@ public partial class InitialCreate : Migration
 {
     protected override void Up(MigrationBuilder migrationBuilder)
     {
+        // Mudarabah Contracts Table
         migrationBuilder.CreateTable(
-            name: "Partners",
+            name: "MudarabahContracts",
             columns: table => new
             {
-                Id = table.Column<int>(nullable: false)
-                    .Annotation("SqlServer:Identity", "1, 1"),
-                Name = table.Column<string>(maxLength: 100, nullable: false),
-                SharePercentage = table.Column<decimal>(type: "decimal(5,2)", nullable: false),
-                InvestmentAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                IsActive = table.Column<bool>(nullable: false, defaultValue: true),
-                JoinDate = table.Column<DateTime>(nullable: false),
-                LastDistributionDate = table.Column<DateTime>(nullable: true)
+                Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                InvestorId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                ContractAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                ProfitSharePercentage = table.Column<decimal>(type: "decimal(5,2)", nullable: false),
+                StartDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                EndDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                Status = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
             },
             constraints: table =>
             {
-                table.PrimaryKey("PK_Partners", x => x.Id);
+                table.PrimaryKey("PK_MudarabahContracts", x => x.Id);
             });
 
+        // Zakat Calculations Table
         migrationBuilder.CreateTable(
-            name: "Products",
+            name: "ZakaatCalculations",
             columns: table => new
             {
-                Id = table.Column<int>(nullable: false)
-                    .Annotation("SqlServer:Identity", "1, 1"),
-                Name = table.Column<string>(maxLength: 100, nullable: false),
-                Description = table.Column<string>(maxLength: 500, nullable: true),
-                Price = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                StockQuantity = table.Column<int>(nullable: false),
-                Barcode = table.Column<string>(maxLength: 50, nullable: true),
-                IsActive = table.Column<bool>(nullable: false, defaultValue: true),
-                CreatedAt = table.Column<DateTime>(nullable: false),
-                UpdatedAt = table.Column<DateTime>(nullable: true)
+                Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                TotalAssets = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                TotalLiabilities = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                ZakaatableAssets = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                ZakaatRate = table.Column<decimal>(type: "decimal(5,2)", nullable: false),
+                ZakaatAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                CalculationDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                PaymentDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                Notes = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true)
             },
             constraints: table =>
             {
-                table.PrimaryKey("PK_Products", x => x.Id);
+                table.PrimaryKey("PK_ZakaatCalculations", x => x.Id);
             });
 
-        migrationBuilder.CreateTable(
-            name: "ProfitDistributions",
-            columns: table => new
-            {
-                Id = table.Column<int>(nullable: false)
-                    .Annotation("SqlServer:Identity", "1, 1"),
-                PartnerId = table.Column<int>(nullable: false),
-                Amount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                DistributionDate = table.Column<DateTime>(nullable: false),
-                Status = table.Column<string>(maxLength: 50, nullable: false),
-                Reference = table.Column<string>(maxLength: 50, nullable: false)
-            },
-            constraints: table =>
-            {
-                table.PrimaryKey("PK_ProfitDistributions", x => x.Id);
-                table.ForeignKey(
-                    name: "FK_ProfitDistributions_Partners_PartnerId",
-                    column: x => x.PartnerId,
-                    principalTable: "Partners",
-                    principalColumn: "Id",
-                    onDelete: ReferentialAction.Restrict);
-            });
-
-        // Add indexes
+        // Create Indexes
         migrationBuilder.CreateIndex(
-            name: "IX_Products_Barcode",
-            table: "Products",
-            column: "Barcode",
-            unique: true,
-            filter: "[Barcode] IS NOT NULL");
-
-        migrationBuilder.CreateIndex(
-            name: "IX_ProfitDistributions_PartnerId",
-            table: "ProfitDistributions",
-            column: "PartnerId");
+            name: "IX_MudarabahContracts_InvestorId",
+            table: "MudarabahContracts",
+            column: "InvestorId");
     }
 
     protected override void Down(MigrationBuilder migrationBuilder)
     {
-        migrationBuilder.DropTable(name: "ProfitDistributions");
-        migrationBuilder.DropTable(name: "Products");
-        migrationBuilder.DropTable(name: "Partners");
+        migrationBuilder.DropTable(name: "ZakaatCalculations");
+        migrationBuilder.DropTable(name: "MudarabahContracts");
     }
 }
