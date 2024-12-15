@@ -4,5 +4,8 @@ namespace IslamicPOS.Domain.Identity;
 
 public class ApplicationUser : IdentityUser
 {
-    // Add any additional user properties
+    // Additional user properties can be added here
+    public string? FirstName { get; set; }
+    public string? LastName { get; set; }
+    public DateTime? LastLoginDate { get; set; }
 }

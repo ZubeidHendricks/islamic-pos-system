@@ -1,14 +1,16 @@
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using IslamicPOS.Application.Common.Interfaces;
 using IslamicPOS.Domain.Common;
 using IslamicPOS.Domain.Inventory;
 using IslamicPOS.Domain.Sales;
 using IslamicPOS.Domain.Finance;
+using IslamicPOS.Domain.Identity;
 using System.Reflection;
 
 namespace IslamicPOS.Infrastructure.Persistence;
 
-public class ApplicationDbContext : DbContext, IApplicationDbContext
+public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplicationDbContext
 {
     public DbSet<Product> Products { get; set; }
     public DbSet<Sale> Sales { get; set; }
