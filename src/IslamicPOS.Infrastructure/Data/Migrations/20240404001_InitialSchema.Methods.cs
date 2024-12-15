@@ -5,7 +5,7 @@ namespace IslamicPOS.Infrastructure.Data.Migrations;
 
 public partial class InitialSchema : Migration
 {
-    protected override void Up(MigrationBuilder migrationBuilder)
+    protected override void UpInitialSchema(MigrationBuilder migrationBuilder)
     {
         // Products Table
         migrationBuilder.CreateTable(
@@ -125,7 +125,7 @@ public partial class InitialSchema : Migration
             column: "TransactionId");
     }
 
-    protected override void Down(MigrationBuilder migrationBuilder)
+    protected override void DownInitialSchema(MigrationBuilder migrationBuilder)
     {
         migrationBuilder.DropTable(name: "TransactionItems");
         migrationBuilder.DropTable(name: "Transactions");
