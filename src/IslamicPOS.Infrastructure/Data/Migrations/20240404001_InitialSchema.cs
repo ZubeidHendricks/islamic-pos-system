@@ -33,8 +33,7 @@ public partial class InitialSchema : Migration
             name: "StockMovements",
             columns: table => new
             {
-                Id = table.Column<int>(type: "int", nullable: false)
-                    .Annotation("SqlServer:Identity", "1, 1"),
+                Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                 ProductId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                 Quantity = table.Column<int>(type: "int", nullable: false),
                 Type = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
