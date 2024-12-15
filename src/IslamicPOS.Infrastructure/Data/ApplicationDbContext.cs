@@ -1,72 +1,73 @@
+using IslamicPOS.Domain.Sales;
 using IslamicPOS.Domain.Finance;
+using IslamicPOS.Domain.Inventory;
 using IslamicPOS.Domain.Common;
+using IslamicPOS.Domain.Logistics;
 using Microsoft.EntityFrameworkCore;
 
-namespace IslamicPOS.Infrastructure.Data
+namespace IslamicPOS.Infrastructure.Data;
+
+public class ApplicationDbContext : DbContext
 {
-    public class ApplicationDbContext : DbContext
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+        : base(options)
     {
-        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
-            : base(options)
+    }
+
+    public DbSet<Sale> Sales => Set<Sale>();
+    public DbSet<SaleItem> SaleItems => Set<SaleItem>();
+    public DbSet<Product> Products => Set<Product>();
+    public DbSet<Category> Categories => Set<Category>();
+    public DbSet<Partner> Partners => Set<Partner>();
+    public DbSet<ZakaatCalculation> ZakaatCalculations => Set<ZakaatCalculation>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<Sale>(entity =>
         {
-        }
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.TotalAmount)
+                  .HasPrecision(18, 2);
+        });
 
-        public DbSet<ZakaatCalculation> ZakaatCalculations => Set<ZakaatCalculation>();
-        public DbSet<IslamicFinanceOptions> FinanceOptions => Set<IslamicFinanceOptions>();
-
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        modelBuilder.Entity<SaleItem>(entity =>
         {
-            base.OnModelCreating(modelBuilder);
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.UnitPrice)
+                  .HasPrecision(18, 2);
+            entity.Property(e => e.Subtotal)
+                  .HasPrecision(18, 2);
+        });
 
-            modelBuilder.Entity<ZakaatCalculation>()
-                .OwnsOne(z => z.TotalWealth, m =>
-                {
-                    m.Property(p => p.Amount).HasColumnName("TotalWealthAmount");
-                    m.Property(p => p.Currency).HasColumnName("TotalWealthCurrency");
-                });
-
-            modelBuilder.Entity<ZakaatCalculation>()
-                .OwnsOne(z => z.NisabThreshold, m =>
-                {
-                    m.Property(p => p.Amount).HasColumnName("NisabThresholdAmount");
-                    m.Property(p => p.Currency).HasColumnName("NisabThresholdCurrency");
-                });
-
-            modelBuilder.Entity<ZakaatCalculation>()
-                .OwnsOne(z => z.ZakaatAmount, m =>
-                {
-                    m.Property(p => p.Amount).HasColumnName("ZakaatAmount");
-                    m.Property(p => p.Currency).HasColumnName("ZakaatCurrency");
-                });
-
-            // Seed initial finance options
-            modelBuilder.Entity<IslamicFinanceOptions>().HasData(
-                new IslamicFinanceOptions(
-                    nisabThreshold: new Domain.ValueObjects.Money(5000m, "USD"),
-                    zakaatRate: 0.025m,
-                    defaultProfitSharingRatio: 0.7m,
-                    financingTermInMonths: 12
-                )
-            );
-        }
-
-        public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        modelBuilder.Entity<ZakaatCalculation>(entity =>
         {
-            foreach (var entry in ChangeTracker.Entries<BaseEntity>())
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.WealthAmount)
+                  .HasPrecision(18, 2);
+            entity.Property(e => e.PropertyValue)
+                  .HasPrecision(18, 2);
+            entity.Property(e => e.ZakaatAmount)
+                  .HasPrecision(18, 2);
+        });
+    }
+
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        foreach (var entry in ChangeTracker.Entries<BaseEntity>())
+        {
+            switch (entry.State)
             {
-                switch (entry.State)
-                {
-                    case EntityState.Added:
-                        entry.Entity.Created = DateTime.UtcNow;
-                        break;
-
-                    case EntityState.Modified:
-                        entry.Entity.LastModified = DateTime.UtcNow;
-                        break;
-                }
+                case EntityState.Added:
+                    entry.Entity.CreatedAt = DateTime.UtcNow;
+                    break;
+                case EntityState.Modified:
+                    entry.Entity.UpdatedAt = DateTime.UtcNow;
+                    break;
             }
-
-            return base.SaveChangesAsync(cancellationToken);
         }
+
+        return base.SaveChangesAsync(cancellationToken);
     }
 }
