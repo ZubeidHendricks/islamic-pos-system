@@ -1,6 +1,6 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using IslamicPOS.Core.Models;
+using IslamicPOS.Domain.Common;
 
 namespace IslamicPOS.Infrastructure.Data.Configurations;
 
@@ -8,26 +8,12 @@ public class TransactionItemConfiguration : IEntityTypeConfiguration<Transaction
 {
     public void Configure(EntityTypeBuilder<TransactionItem> builder)
     {
-        builder.HasKey(ti => ti.Id);
+        builder.HasKey(e => e.Id);
 
-        builder.Property(ti => ti.ProductName)
-            .IsRequired()
-            .HasMaxLength(200);
-
-        builder.Property(ti => ti.UnitPrice)
-            .HasColumnType("decimal(18,2)")
+        builder.Property(e => e.Quantity)
             .IsRequired();
 
-        builder.Property(ti => ti.Quantity)
-            .IsRequired();
-
-        builder.Property(ti => ti.Subtotal)
-            .HasColumnType("decimal(18,2)")
-            .IsRequired();
-
-        builder.HasOne<Product>()
-            .WithMany()
-            .HasForeignKey(ti => ti.ProductId)
-            .OnDelete(DeleteBehavior.Restrict);
+        builder.Property(e => e.UnitPrice)
+            .HasPrecision(18, 2);
     }
 }

@@ -1,32 +1,21 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using IslamicPOS.Core.Models;
+using IslamicPOS.Domain.Common;
 
 namespace IslamicPOS.Infrastructure.Data.Configurations;
 
-public class UserConfiguration : IEntityTypeConfiguration<ApplicationUser>
+public class UserConfiguration : IEntityTypeConfiguration<User>
 {
-    public void Configure(EntityTypeBuilder<ApplicationUser> builder)
+    public void Configure(EntityTypeBuilder<User> builder)
     {
-        builder.Property(u => u.FirstName)
-            .IsRequired()
-            .HasMaxLength(100);
+        builder.HasKey(e => e.Id);
 
-        builder.Property(u => u.LastName)
-            .IsRequired()
-            .HasMaxLength(100);
-
-        builder.Property(u => u.Role)
+        builder.Property(e => e.Username)
             .IsRequired()
             .HasMaxLength(50);
 
-        builder.Property(u => u.CreatedAt)
+        builder.Property(e => e.Email)
             .IsRequired()
-            .HasDefaultValueSql("GETUTCDATE()");
-
-        builder.HasMany(u => u.Permissions)
-            .WithOne()
-            .HasForeignKey("UserId")
-            .OnDelete(DeleteBehavior.Cascade);
+            .HasMaxLength(100);
     }
 }
