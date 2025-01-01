@@ -1,0 +1,10 @@
+global using Microsoft.EntityFrameworkCore;
+global using Microsoft.Extensions.Configuration;
+global using Microsoft.Extensions.DependencyInjection;
+global using System.Reflection;
+global using IslamicPOS.Core.Models;
+global using IslamicPOS.Core.Models.Products;
+global using IslamicPOS.Core.Models.Sales;
+global using IslamicPOS.Core.Models.Financial;
+global using IslamicPOS.Core.Models.IslamicFinance;
+global using IslamicPOS.Core.Models.Common;
