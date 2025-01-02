@@ -1,0 +1,124 @@
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<MudList Clickable="true" Dense="true">
+    @foreach (var notification in Notifications.OrderByDescending(n => n.CreatedAt))
+    {
+        <MudListItem OnClick="@(() => HandleNotificationClick(notification))"
+                     Class="@(notification.IsRead ? "" : "mud-theme-primary")">
+            <div class="d-flex align-start py-2">
+                <div class="mr-3">
+                    <MudIcon Icon="@GetNotificationIcon(notification)" 
+                            Color="@GetNotificationColor(notification)"/>
+                </div>
+                <div class="flex-grow-1">
+                    <div class="d-flex justify-space-between align-center">
+                        <MudText Typo="Typo.body1">@notification.Title</MudText>
+                        <MudText Typo="Typo.caption">
+                            @GetTimeAgo(notification.CreatedAt)
+                        </MudText>
+                    </div>
+                    <MudText Typo="Typo.body2" Class="mt-1">@notification.Message</MudText>
+                    @if (notification.RequiresAction && !notification.IsHandled)
+                    {
+                        <MudButton Variant="Variant.Text"
+                                  Color="Color.Primary"
+                                  Size="Size.Small"
+                                  EndIcon="@Icons.Material.Filled.ChevronRight"
+                                  Class="mt-2"
+                                  OnClick="@(() => NavigateToAction(notification))">
+                            Take Action
+                        </MudButton>
+                    }
+                </div>
+                <div class="ml-3">
+                    <MudMenu Icon="@Icons.Material.Filled.MoreVert">
+                        @if (!notification.IsRead)
+                        {
+                            <MudMenuItem OnClick="@(() => MarkAsRead(notification))">
+                                Mark as Read
+                            </MudMenuItem>
+                        }
+                        @if (notification.RequiresAction && !notification.IsHandled)
+                        {
+                            <MudMenuItem OnClick="@(() => MarkAsHandled(notification))">
+                                Mark as Handled
+                            </MudMenuItem>
+                        }
+                        <MudMenuItem OnClick="@(() => DeleteNotification(notification))">
+                            Delete
+                        </MudMenuItem>
+                    </MudMenu>
+                </div>
+            </div>
+        </MudListItem>
+        <MudDivider/>
+    }
+</MudList>
+
+@code {
+    [Parameter] public IEnumerable<NotificationDto> Notifications { get; set; }
+
+    private string GetNotificationIcon(NotificationDto notification)
+    {
+        return notification.Type switch
+        {
+            NotificationType.Stock => Icons.Material.Filled.Inventory,
+            NotificationType.Finance => Icons.Material.Filled.AccountBalance,
+            NotificationType.Certification => Icons.Material.Filled.VerifiedUser,
+            NotificationType.Loyalty => Icons.Material.Filled.Stars,
+            _ => Icons.Material.Filled.Notifications
+        };
+    }
+
+    private Color GetNotificationColor(NotificationDto notification)
+    {
+        return notification.Priority switch
+        {
+            "High" => Color.Error,
+            "Medium" => Color.Warning,
+            _ => Color.Info
+        };
+    }
+
+    private string GetTimeAgo(DateTime dateTime)
+    {
+        var span = DateTime.Now - dateTime;
+
+        if (span.TotalDays > 1) return $"{(int)span.TotalDays}d ago";
+        if (span.TotalHours > 1) return $"{(int)span.TotalHours}h ago";
+        if (span.TotalMinutes > 1) return $"{(int)span.TotalMinutes}m ago";
+        return "just now";
+    }
+
+    private void HandleNotificationClick(NotificationDto notification)
+    {
+        if (!notification.IsRead)
+        {
+            MarkAsRead(notification);
+        }
+    }
+
+    private void MarkAsRead(NotificationDto notification)
+    {
+        notification.IsRead = true;
+        Snackbar.Add("Notification marked as read", Severity.Success);
+    }
+
+    private void MarkAsHandled(NotificationDto notification)
+    {
+        notification.IsHandled = true;
+        Snackbar.Add("Notification marked as handled", Severity.Success);
+    }
+
+    private void DeleteNotification(NotificationDto notification)
+    {
+        // In a real app, we would call a service to delete the notification
+        Snackbar.Add("Notification deleted", Severity.Success);
+    }
+
+    private void NavigateToAction(NotificationDto notification)
+    {
+        NavigationManager.NavigateTo(notification.ActionUrl);
+    }
+}

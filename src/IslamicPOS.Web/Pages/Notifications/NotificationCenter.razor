@@ -1,0 +1,213 @@
+@page "/notifications"
+@inject ISnackbar Snackbar
+@inject NavigationManager NavigationManager
+
+<MudContainer>
+    <MudPaper Class="pa-4">
+        <MudText Typo="Typo.h5" Class="mb-4">Notification Center</MudText>
+
+        <!-- Notification Summary -->
+        <MudGrid Class="mb-4">
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Class="pa-4" Elevation="2">
+                    <MudText Typo="Typo.subtitle2">Unread Alerts</MudText>
+                    <MudText Typo="Typo.h4" Color="Color.Error">
+                        @_notifications.Count(n => !n.IsRead)
+                    </MudText>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Class="pa-4" Elevation="2">
+                    <MudText Typo="Typo.subtitle2">Critical Alerts</MudText>
+                    <MudText Typo="Typo.h4" Color="Color.Error">
+                        @_notifications.Count(n => n.Priority == "High" && !n.IsRead)
+                    </MudText>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Class="pa-4" Elevation="2">
+                    <MudText Typo="Typo.subtitle2">Action Required</MudText>
+                    <MudText Typo="Typo.h4" Color="Color.Warning">
+                        @_notifications.Count(n => n.RequiresAction && !n.IsHandled)
+                    </MudText>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Class="pa-4" Elevation="2">
+                    <MudText Typo="Typo.subtitle2">Today's Alerts</MudText>
+                    <MudText Typo="Typo.h4" Color="Color.Info">
+                        @_notifications.Count(n => n.CreatedAt.Date == DateTime.Today)
+                    </MudText>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+
+        <!-- Quick Actions -->
+        <MudPaper Class="pa-4 mb-4" Elevation="2">
+            <MudText Typo="Typo.h6" Class="mb-2">Quick Actions</MudText>
+            <MudGrid>
+                <MudItem xs="12" md="3">
+                    <MudButton Variant="Variant.Filled"
+                              Color="Color.Primary"
+                              OnClick="MarkAllAsRead"
+                              FullWidth="true">
+                        Mark All as Read
+                    </MudButton>
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudButton Variant="Variant.Filled"
+                              Color="Color.Secondary"
+                              OnClick="ViewSettings"
+                              FullWidth="true">
+                        Notification Settings
+                    </MudButton>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+
+        <!-- Filter Tabs -->
+        <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-6">
+            <MudTabPanel Text="All Notifications" Icon="@Icons.Material.Filled.Notifications">
+                <NotificationsList Notifications="@_notifications"/>
+            </MudTabPanel>
+            <MudTabPanel Text="Stock Alerts" Icon="@Icons.Material.Filled.Inventory">
+                <NotificationsList Notifications="@GetNotificationsByType(NotificationType.Stock)"/>
+            </MudTabPanel>
+            <MudTabPanel Text="Zakat & Finance" Icon="@Icons.Material.Filled.AccountBalance">
+                <NotificationsList Notifications="@GetNotificationsByType(NotificationType.Finance)"/>
+            </MudTabPanel>
+            <MudTabPanel Text="Certifications" Icon="@Icons.Material.Filled.VerifiedUser">
+                <NotificationsList Notifications="@GetNotificationsByType(NotificationType.Certification)"/>
+            </MudTabPanel>
+            <MudTabPanel Text="Customer Loyalty" Icon="@Icons.Material.Filled.Stars">
+                <NotificationsList Notifications="@GetNotificationsByType(NotificationType.Loyalty)"/>
+            </MudTabPanel>
+        </MudTabs>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private List<NotificationDto> _notifications = new();
+
+    protected override void OnInitialized()
+    {
+        LoadDemoNotifications();
+    }
+
+    private void LoadDemoNotifications()
+    {
+        _notifications = new List<NotificationDto>
+        {
+            // Stock Alerts
+            new()
+            {
+                Id = Guid.NewGuid(),
+                Type = NotificationType.Stock,
+                Title = "Low Stock Alert",
+                Message = "5 products are running low on stock",
+                Priority = "High",
+                CreatedAt = DateTime.Now.AddHours(-2),
+                RequiresAction = true,
+                ActionUrl = "/inventory",
+                IsRead = false
+            },
+            
+            // Zakat Alerts
+            new()
+            {
+                Id = Guid.NewGuid(),
+                Type = NotificationType.Finance,
+                Title = "Zakat Due Reminder",
+                Message = "Zakat payment due in 7 days",
+                Priority = "High",
+                CreatedAt = DateTime.Now.AddDays(-1),
+                RequiresAction = true,
+                ActionUrl = "/zakat",
+                IsRead = false
+            },
+            
+            // Profit Distribution
+            new()
+            {
+                Id = Guid.NewGuid(),
+                Type = NotificationType.Finance,
+                Title = "Monthly Profit Distribution",
+                Message = "Profit distribution for May 2024 is ready for review",
+                Priority = "Medium",
+                CreatedAt = DateTime.Now.AddDays(-2),
+                RequiresAction = true,
+                ActionUrl = "/profit-sharing",
+                IsRead = false
+            },
+            
+            // Halal Certification
+            new()
+            {
+                Id = Guid.NewGuid(),
+                Type = NotificationType.Certification,
+                Title = "Certification Expiring",
+                Message = "Halal certification for 3 products expires in 30 days",
+                Priority = "Medium",
+                CreatedAt = DateTime.Now.AddDays(-3),
+                RequiresAction = true,
+                ActionUrl = "/products",
+                IsRead = false
+            },
+            
+            // Customer Loyalty
+            new()
+            {
+                Id = Guid.NewGuid(),
+                Type = NotificationType.Loyalty,
+                Title = "Loyalty Milestone Achieved",
+                Message = "Customer John Smith has reached Gold tier status",
+                Priority = "Low",
+                CreatedAt = DateTime.Now.AddHours(-4),
+                RequiresAction = false,
+                ActionUrl = "/customers",
+                IsRead = false
+            }
+        };
+    }
+
+    private IEnumerable<NotificationDto> GetNotificationsByType(NotificationType type)
+    {
+        return _notifications.Where(n => n.Type == type);
+    }
+
+    private void MarkAllAsRead()
+    {
+        foreach (var notification in _notifications)
+        {
+            notification.IsRead = true;
+        }
+        Snackbar.Add("All notifications marked as read", Severity.Success);
+    }
+
+    private void ViewSettings()
+    {
+        NavigationManager.NavigateTo("/settings/notifications");
+    }
+
+    private enum NotificationType
+    {
+        Stock,
+        Finance,
+        Certification,
+        Loyalty
+    }
+
+    private class NotificationDto
+    {
+        public Guid Id { get; set; }
+        public NotificationType Type { get; set; }
+        public string Title { get; set; }
+        public string Message { get; set; }
+        public string Priority { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public bool RequiresAction { get; set; }
+        public string ActionUrl { get; set; }
+        public bool IsRead { get; set; }
+        public bool IsHandled { get; set; }
+    }
+}
