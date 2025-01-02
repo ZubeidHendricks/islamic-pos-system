@@ -1,0 +1,317 @@
+@inject IReportingService ReportingService
+
+<MudPaper Class="pa-4">
+    <MudText Typo="Typo.h6">Customer Behavior Analysis</MudText>
+    
+    <!-- Purchase Patterns -->
+    <MudGrid>
+        <!-- Purchase Frequency -->
+        <MudItem xs="12" md="6">
+            <MudChart ChartType="ChartType.Bar"
+                     ChartSeries="@_frequencySeries"
+                     XAxisLabels="@_frequencyLabels"
+                     Width="100%"
+                     Height="300px"/>
+            <MudText Align="Align.Center">Purchase Frequency Distribution</MudText>
+        </MudItem>
+
+        <!-- Time of Day Analysis -->
+        <MudItem xs="12" md="6">
+            <MudChart ChartType="ChartType.Line"
+                     ChartSeries="@_timeOfDaySeries"
+                     XAxisLabels="@_hourLabels"
+                     Width="100%"
+                     Height="300px"/>
+            <MudText Align="Align.Center">Purchase Time Distribution</MudText>
+        </MudItem>
+
+        <!-- Customer Segments -->
+        <MudItem xs="12">
+            <MudText Typo="Typo.subtitle1" Class="mt-4 mb-2">Customer Segments</MudText>
+            <MudGrid>
+                @foreach (var segment in _customerSegments)
+                {
+                    <MudItem xs="12" sm="6" md="4">
+                        <MudCard>
+                            <MudCardContent>
+                                <div class="d-flex justify-space-between">
+                                    <div>
+                                        <MudText Typo="Typo.h6">@segment.Name</MudText>
+                                        <MudText Typo="Typo.caption">@segment.Description</MudText>
+                                    </div>
+                                    <MudChip Color="@GetSegmentColor(segment.Growth)" Size="Size.Small">
+                                        @segment.Growth.ToString("+0.0%;-0.0%")
+                                    </MudChip>
+                                </div>
+                                <MudDivider Class="my-2"/>
+                                <MudList Dense="true">
+                                    <MudListItem>
+                                        <MudText>Customers: @segment.CustomerCount</MudText>
+                                    </MudListItem>
+                                    <MudListItem>
+                                        <MudText>Avg. Order: @segment.AverageOrder.ToString("C")</MudText>
+                                    </MudListItem>
+                                    <MudListItem>
+                                        <MudText>Retention: @segment.RetentionRate.ToString("0.0")%</MudText>
+                                    </MudListItem>
+                                </MudList>
+                            </MudCardContent>
+                        </MudCard>
+                    </MudItem>
+                }
+            </MudGrid>
+        </MudItem>
+
+        <!-- Customer Journey Analysis -->
+        <MudItem xs="12">
+            <MudText Typo="Typo.subtitle1" Class="mt-4 mb-2">Customer Journey Analysis</MudText>
+            <MudTable Items="@_customerJourneys" Dense="true" Hover="true">
+                <HeaderContent>
+                    <MudTh>Journey Stage</MudTh>
+                    <MudTh>Customers</MudTh>
+                    <MudTh>Conversion Rate</MudTh>
+                    <MudTh>Avg. Time in Stage</MudTh>
+                    <MudTh>Trend</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.Stage</MudTd>
+                    <MudTd>@context.CustomerCount</MudTd>
+                    <MudTd>@context.ConversionRate.ToString("0.0")%</MudTd>
+                    <MudTd>@context.AverageTime</MudTd>
+                    <MudTd>
+                        <MudText Color="@GetTrendColor(context.Trend)">
+                            @context.Trend.ToString("+0.0%;-0.0%")
+                        </MudText>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudItem>
+
+        <!-- Retention Analysis -->
+        <MudItem xs="12">
+            <MudText Typo="Typo.subtitle1" Class="mt-4 mb-2">Retention Analysis</MudText>
+            <MudChart ChartType="ChartType.Line"
+                     ChartSeries="@_retentionSeries"
+                     XAxisLabels="@_retentionLabels"
+                     Width="100%"
+                     Height="300px"/>
+        </MudItem>
+
+        <!-- Insights -->
+        <MudItem xs="12">
+            <MudExpansionPanels>
+                <MudExpansionPanel Text="Customer Insights">
+                    <MudList Dense="true">
+                        @foreach (var insight in _customerInsights)
+                        {
+                            <MudListItem Icon="@GetInsightIcon(insight.Type)">
+                                <MudText Color="@GetInsightColor(insight.Type)">
+                                    @insight.Message
+                                </MudText>
+                            </MudListItem>
+                        }
+                    </MudList>
+                </MudExpansionPanel>
+            </MudExpansionPanels>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+@code {
+    [Parameter] public DateRange DateRange { get; set; }
+
+    private ChartSeries[] _frequencySeries;
+    private string[] _frequencyLabels;
+    private ChartSeries[] _timeOfDaySeries;
+    private string[] _hourLabels;
+    private List<CustomerSegmentDto> _customerSegments = new();
+    private List<CustomerJourneyDto> _customerJourneys = new();
+    private ChartSeries[] _retentionSeries;
+    private string[] _retentionLabels;
+    private List<CustomerInsightDto> _customerInsights = new();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        // Sample data - replace with actual data service calls
+        _customerSegments = new List<CustomerSegmentDto>
+        {
+            new()
+            {
+                Name = "Loyal Customers",
+                Description = "High-value repeat customers",
+                CustomerCount = 250,
+                AverageOrder = 150.00m,
+                RetentionRate = 85.5,
+                Growth = 0.15
+            },
+            new()
+            {
+                Name = "Regular Shoppers",
+                Description = "Consistent medium-value customers",
+                CustomerCount = 500,
+                AverageOrder = 75.00m,
+                RetentionRate = 65.5,
+                Growth = 0.08
+            },
+            new()
+            {
+                Name = "New Customers",
+                Description = "First-time buyers",
+                CustomerCount = 300,
+                AverageOrder = 50.00m,
+                RetentionRate = 35.5,
+                Growth = 0.25
+            }
+        };
+
+        _customerJourneys = new List<CustomerJourneyDto>
+        {
+            new()
+            {
+                Stage = "Awareness",
+                CustomerCount = 1000,
+                ConversionRate = 45.5,
+                AverageTime = "2 days",
+                Trend = 0.12
+            },
+            new()
+            {
+                Stage = "Consideration",
+                CustomerCount = 450,
+                ConversionRate = 35.5,
+                AverageTime = "3 days",
+                Trend = 0.08
+            },
+            new()
+            {
+                Stage = "Purchase",
+                CustomerCount = 160,
+                ConversionRate = 25.5,
+                AverageTime = "1 day",
+                Trend = 0.15
+            }
+        };
+
+        _customerInsights = new List<CustomerInsightDto>
+        {
+            new()
+            {
+                Message = "Loyal customer segment grew by 15% this period",
+                Type = InsightType.Positive
+            },
+            new()
+            {
+                Message = "Average time to first purchase reduced by 25%",
+                Type = InsightType.Positive
+            },
+            new()
+            {
+                Message = "Customer retention rate stable at 65%",
+                Type = InsightType.Neutral
+            }
+        };
+
+        await LoadCharts();
+    }
+
+    private async Task LoadCharts()
+    {
+        // Purchase Frequency
+        _frequencyLabels = new[] { "1x", "2-3x", "4-5x", "6+x" };
+        _frequencySeries = new[]
+        {
+            new ChartSeries
+            {
+                Name = "Customers",
+                Data = new[] { 300.0, 450.0, 200.0, 50.0 }
+            }
+        };
+
+        // Time of Day
+        _hourLabels = new[] { "6am", "9am", "12pm", "3pm", "6pm", "9pm" };
+        _timeOfDaySeries = new[]
+        {
+            new ChartSeries
+            {
+                Name = "Transactions",
+                Data = new[] { 50.0, 150.0, 200.0, 180.0, 220.0, 100.0 }
+            }
+        };
+
+        // Retention
+        _retentionLabels = new[] { "Week 1", "Week 2", "Week 3", "Week 4" };
+        _retentionSeries = new[]
+        {
+            new ChartSeries
+            {
+                Name = "Retention Rate",
+                Data = new[] { 100.0, 85.0, 75.0, 70.0 }
+            }
+        };
+    }
+
+    private Color GetSegmentColor(double growth) => growth switch
+    {
+        > 0.1 => Color.Success,
+        > 0 => Color.Info,
+        _ => Color.Error
+    };
+
+    private Color GetTrendColor(double trend) => trend switch
+    {
+        > 0 => Color.Success,
+        < 0 => Color.Error,
+        _ => Color.Default
+    };
+
+    private string GetInsightIcon(InsightType type) => type switch
+    {
+        InsightType.Positive => Icons.Material.Filled.TrendingUp,
+        InsightType.Negative => Icons.Material.Filled.TrendingDown,
+        _ => Icons.Material.Filled.TrendingFlat
+    };
+
+    private Color GetInsightColor(InsightType type) => type switch
+    {
+        InsightType.Positive => Color.Success,
+        InsightType.Negative => Color.Error,
+        _ => Color.Default
+    };
+
+    private class CustomerSegmentDto
+    {
+        public string Name { get; set; }
+        public string Description { get; set; }
+        public int CustomerCount { get; set; }
+        public decimal AverageOrder { get; set; }
+        public double RetentionRate { get; set; }
+        public double Growth { get; set; }
+    }
+
+    private class CustomerJourneyDto
+    {
+        public string Stage { get; set; }
+        public int CustomerCount { get; set; }
+        public double ConversionRate { get; set; }
+        public string AverageTime { get; set; }
+        public double Trend { get; set; }
+    }
+
+    private class CustomerInsightDto
+    {
+        public string Message { get; set; }
+        public InsightType Type { get; set; }
+    }
+
+    private enum InsightType
+    {
+        Positive,
+        Neutral,
+        Negative
+    }
+}

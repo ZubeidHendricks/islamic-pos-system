@@ -1,0 +1,129 @@
+@inject IReportingService ReportingService
+
+<MudPaper Class="pa-4">
+    <MudText Typo="Typo.h6" Class="mb-4">Sales Analytics</MudText>
+
+    <MudGrid>
+        <!-- Sales by Category -->
+        <MudItem xs="12" md="6">
+            <MudChart ChartType="ChartType.Bar"
+                     ChartSeries="@_salesByCategorySeries"
+                     XAxisLabels="@_categoryLabels"
+                     Width="100%"
+                     Height="300px"/>
+            <MudText Align="Align.Center" Class="mt-2">Sales by Category</MudText>
+        </MudItem>
+
+        <!-- Sales by Time of Day -->
+        <MudItem xs="12" md="6">
+            <MudChart ChartType="ChartType.Line"
+                     ChartSeries="@_hourlyDistributionSeries"
+                     XAxisLabels="@_hourLabels"
+                     Width="100%"
+                     Height="300px"/>
+            <MudText Align="Align.Center" Class="mt-2">Sales by Hour</MudText>
+        </MudItem>
+
+        <!-- Sales Metrics Table -->
+        <MudItem xs="12">
+            <MudTable Items="@_salesMetrics" Dense="true" Hover="true">
+                <HeaderContent>
+                    <MudTh>Metric</MudTh>
+                    <MudTh>Current Period</MudTh>
+                    <MudTh>Previous Period</MudTh>
+                    <MudTh>Change</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.MetricName</MudTd>
+                    <MudTd>@context.CurrentValue</MudTd>
+                    <MudTd>@context.PreviousValue</MudTd>
+                    <MudTd>
+                        <MudText Color="@(context.Change >= 0 ? Color.Success : Color.Error)">
+                            @context.Change.ToString("+0.0%;-0.0%")
+                        </MudText>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+@code {
+    [Parameter] public DateRange DateRange { get; set; }
+    
+    private ChartSeries[] _salesByCategorySeries;
+    private string[] _categoryLabels;
+    private ChartSeries[] _hourlyDistributionSeries;
+    private string[] _hourLabels;
+    private List<SalesMetricDto> _salesMetrics = new();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        // Get sales by category
+        var salesByCategory = await ReportingService.GetSalesByProductCategoryAsync(
+            DateRange.Start.Value,
+            DateRange.End.Value
+        );
+
+        _categoryLabels = salesByCategory.Keys.ToArray();
+        _salesByCategorySeries = new[]
+        {
+            new ChartSeries
+            {
+                Name = "Sales",
+                Data = salesByCategory.Values.Select(v => (double)v).ToArray()
+            }
+        };
+
+        // Get hourly distribution
+        var hourlyData = await ReportingService.GetTransactionsByHourAsync(DateTime.Today);
+        _hourLabels = hourlyData.Keys.ToArray();
+        _hourlyDistributionSeries = new[]
+        {
+            new ChartSeries
+            {
+                Name = "Transactions",
+                Data = hourlyData.Values.Select(v => (double)v).ToArray()
+            }
+        };
+
+        // Sample metrics
+        _salesMetrics = new List<SalesMetricDto>
+        {
+            new()
+            {
+                MetricName = "Average Transaction Value",
+                CurrentValue = "$75.50",
+                PreviousValue = "$70.25",
+                Change = 0.075
+            },
+            new()
+            {
+                MetricName = "Items per Transaction",
+                CurrentValue = "3.2",
+                PreviousValue = "2.8",
+                Change = 0.143
+            },
+            new()
+            {
+                MetricName = "Conversion Rate",
+                CurrentValue = "35%",
+                PreviousValue = "32%",
+                Change = 0.094
+            }
+        };
+    }
+
+    private class SalesMetricDto
+    {
+        public string MetricName { get; set; }
+        public string CurrentValue { get; set; }
+        public string PreviousValue { get; set; }
+        public double Change { get; set; }
+    }
+}

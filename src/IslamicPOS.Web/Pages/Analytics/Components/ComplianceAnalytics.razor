@@ -1,0 +1,187 @@
+@inject IFinancialService FinancialService
+
+<MudPaper Class="pa-4">
+    <MudText Typo="Typo.h6" Class="mb-4">Compliance Analytics</MudText>
+
+    <MudGrid>
+        <!-- Halal Compliance -->
+        <MudItem xs="12" md="6">
+            <MudPaper Class="pa-4" Elevation="0">
+                <MudText Typo="Typo.subtitle1" Class="mb-4">Halal Compliance</MudText>
+                <div class="d-flex justify-center">
+                    <MudProgressCircular 
+                        Value="@_halalCompliance" 
+                        Color="@(_halalCompliance >= 95 ? Color.Success : Color.Warning)"
+                        Size="Size.Large">
+                        @_halalCompliance.ToString("0.0")%
+                    </MudProgressCircular>
+                </div>
+                <MudList Dense="true" Class="mt-4">
+                    <MudListItem>
+                        <div class="d-flex justify-space-between">
+                            <MudText>Total Products</MudText>
+                            <MudText>@_totalProducts</MudText>
+                        </div>
+                    </MudListItem>
+                    <MudListItem>
+                        <div class="d-flex justify-space-between">
+                            <MudText>Halal Certified</MudText>
+                            <MudText>@_halalCertifiedProducts</MudText>
+                        </div>
+                    </MudListItem>
+                    <MudListItem>
+                        <div class="d-flex justify-space-between">
+                            <MudText>Pending Certification</MudText>
+                            <MudText>@_pendingCertification</MudText>
+                        </div>
+                    </MudListItem>
+                </MudList>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Transaction Compliance -->
+        <MudItem xs="12" md="6">
+            <MudPaper Class="pa-4" Elevation="0">
+                <MudText Typo="Typo.subtitle1" Class="mb-4">Transaction Compliance</MudText>
+                <div class="d-flex justify-center">
+                    <MudProgressCircular 
+                        Value="@_transactionCompliance" 
+                        Color="@(_transactionCompliance >= 95 ? Color.Success : Color.Warning)"
+                        Size="Size.Large">
+                        @_transactionCompliance.ToString("0.0")%
+                    </MudProgressCircular>
+                </div>
+                <MudList Dense="true" Class="mt-4">
+                    <MudListItem>
+                        <div class="d-flex justify-space-between">
+                            <MudText>Total Transactions</MudText>
+                            <MudText>@_totalTransactions</MudText>
+                        </div>
+                    </MudListItem>
+                    <MudListItem>
+                        <div class="d-flex justify-space-between">
+                            <MudText>Compliant Payments</MudText>
+                            <MudText>@_compliantTransactions</MudText>
+                        </div>
+                    </MudListItem>
+                    <MudListItem>
+                        <div class="d-flex justify-space-between">
+                            <MudText>Non-Compliant</MudText>
+                            <MudText>@_nonCompliantTransactions</MudText>
+                        </div>
+                    </MudListItem>
+                </MudList>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Compliance Timeline -->
+        <MudItem xs="12">
+            <MudText Typo="Typo.subtitle1" Class="mb-4">Certification Timeline</MudText>
+            <MudTimeline>
+                @foreach (var cert in _upcomingCertifications)
+                {
+                    <MudTimelineItem Color="@GetCertificationColor(cert.DaysUntilExpiry)">
+                        <ItemContent>
+                            <MudText>@cert.ProductName</MudText>
+                            <MudText Typo="Typo.caption">
+                                Expires on @cert.ExpiryDate.ToShortDateString() 
+                                (@cert.DaysUntilExpiry days remaining)
+                            </MudText>
+                        </ItemContent>
+                    </MudTimelineItem>
+                }
+            </MudTimeline>
+        </MudItem>
+
+        <!-- Compliance Alerts -->
+        @if (_complianceAlerts.Any())
+        {
+            <MudItem xs="12">
+                <MudText Typo="Typo.subtitle1" Class="mb-4">Compliance Alerts</MudText>
+                @foreach (var alert in _complianceAlerts)
+                {
+                    <MudAlert Severity="@alert.Severity" Class="mb-2">
+                        @alert.Message
+                    </MudAlert>
+                }
+            </MudItem>
+        }
+    </MudGrid>
+</MudPaper>
+
+@code {
+    [Parameter] public DateRange DateRange { get; set; }
+
+    private double _halalCompliance = 98.5;
+    private int _totalProducts = 200;
+    private int _halalCertifiedProducts = 197;
+    private int _pendingCertification = 3;
+
+    private double _transactionCompliance = 96.8;
+    private int _totalTransactions = 1250;
+    private int _compliantTransactions = 1210;
+    private int _nonCompliantTransactions = 40;
+
+    private List<CertificationDto> _upcomingCertifications = new();
+    private List<ComplianceAlertDto> _complianceAlerts = new();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        // Sample certification data
+        _upcomingCertifications = new List<CertificationDto>
+        {
+            new()
+            {
+                ProductName = "Product A",
+                ExpiryDate = DateTime.Today.AddDays(15),
+                DaysUntilExpiry = 15
+            },
+            new()
+            {
+                ProductName = "Product B",
+                ExpiryDate = DateTime.Today.AddDays(30),
+                DaysUntilExpiry = 30
+            }
+        };
+
+        // Sample alerts
+        _complianceAlerts = new List<ComplianceAlertDto>
+        {
+            new()
+            {
+                Message = "3 products require Halal certification renewal",
+                Severity = Severity.Warning
+            },
+            new()
+            {
+                Message = "Non-compliant payment methods used in 40 transactions",
+                Severity = Severity.Warning
+            }
+        };
+    }
+
+    private Color GetCertificationColor(int daysRemaining) => daysRemaining switch
+    {
+        <= 15 => Color.Error,
+        <= 30 => Color.Warning,
+        _ => Color.Success
+    };
+
+    private class CertificationDto
+    {
+        public string ProductName { get; set; }
+        public DateTime ExpiryDate { get; set; }
+        public int DaysUntilExpiry { get; set; }
+    }
+
+    private class ComplianceAlertDto
+    {
+        public string Message { get; set; }
+        public Severity Severity { get; set; }
+    }
+}

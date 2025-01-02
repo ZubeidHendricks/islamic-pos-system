@@ -1,0 +1,238 @@
+@inject IProfitSharingService ProfitSharingService
+@inject IFinancialService FinancialService
+
+<MudPaper Class="pa-4">
+    <MudText Typo="Typo.h6" Class="mb-4">Profit Distribution Analytics</MudText>
+
+    <MudGrid>
+        <!-- Distribution Summary -->
+        <MudItem xs="12" md="4">
+            <MudChart ChartType="ChartType.Donut"
+                     InputData="@_distributionData"
+                     InputLabels="@_distributionLabels"
+                     Width="100%"
+                     Height="300px"/>
+            <MudText Align="Align.Center" Class="mt-2">Profit Distribution</MudText>
+        </MudItem>
+
+        <!-- Partner Returns -->
+        <MudItem xs="12" md="8">
+            <MudTable Items="@_partnerReturns" Dense="true" Hover="true">
+                <HeaderContent>
+                    <MudTh>Partner</MudTh>
+                    <MudTh>Investment</MudTh>
+                    <MudTh>Share %</MudTh>
+                    <MudTh>Current Period</MudTh>
+                    <MudTh>YTD Returns</MudTh>
+                    <MudTh>ROI</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.Name</MudTd>
+                    <MudTd>@context.Investment.ToString("C")</MudTd>
+                    <MudTd>@context.SharePercentage.ToString("0.0")%</MudTd>
+                    <MudTd>@context.CurrentReturn.ToString("C")</MudTd>
+                    <MudTd>@context.YtdReturns.ToString("C")</MudTd>
+                    <MudTd>
+                        <MudText Color="@GetRoiColor(context.Roi)">
+                            @context.Roi.ToString("0.0")%
+                        </MudText>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudItem>
+
+        <!-- Distribution History -->
+        <MudItem xs="12">
+            <MudText Typo="Typo.subtitle1" Class="mb-4">Distribution History</MudText>
+            <MudChart ChartType="ChartType.Line"
+                     ChartSeries="@_historySeries"
+                     XAxisLabels="@_historyLabels"
+                     Width="100%"
+                     Height="300px"/>
+        </MudItem>
+
+        <!-- Detailed Metrics -->
+        <MudItem xs="12">
+            <MudGrid>
+                <MudItem xs="12" sm="6" md="3">
+                    <MudPaper Class="pa-4" Elevation="0">
+                        <MudText>Total Distributed</MudText>
+                        <MudText Typo="Typo.h5" Color="Color.Primary">
+                            @_totalDistributed.ToString("C")
+                        </MudText>
+                    </MudPaper>
+                </MudItem>
+
+                <MudItem xs="12" sm="6" md="3">
+                    <MudPaper Class="pa-4" Elevation="0">
+                        <MudText>Average ROI</MudText>
+                        <MudText Typo="Typo.h5" Color="@GetRoiColor(_averageRoi)">
+                            @_averageRoi.ToString("0.0")%
+                        </MudText>
+                    </MudPaper>
+                </MudItem>
+
+                <MudItem xs="12" sm="6" md="3">
+                    <MudPaper Class="pa-4" Elevation="0">
+                        <MudText>Charity Contribution</MudText>
+                        <MudText Typo="Typo.h5" Color="Color.Success">
+                            @_charityContribution.ToString("C")
+                        </MudText>
+                    </MudPaper>
+                </MudItem>
+
+                <MudItem xs="12" sm="6" md="3">
+                    <MudPaper Class="pa-4" Elevation="0">
+                        <MudText>Next Distribution</MudText>
+                        <MudText Typo="Typo.h5">
+                            @_nextDistribution.ToShortDateString()
+                        </MudText>
+                    </MudPaper>
+                </MudItem>
+            </MudGrid>
+        </MudItem>
+
+        <!-- Insights -->
+        <MudItem xs="12">
+            <MudExpansionPanels>
+                <MudExpansionPanel Text="Distribution Insights">
+                    <MudList Dense="true">
+                        @foreach (var insight in _insights)
+                        {
+                            <MudListItem Icon="@GetInsightIcon(insight.Type)">
+                                <MudText Color="@GetInsightColor(insight.Type)">
+                                    @insight.Message
+                                </MudText>
+                            </MudListItem>
+                        }
+                    </MudList>
+                </MudExpansionPanel>
+            </MudExpansionPanels>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+@code {
+    [Parameter] public DateRange DateRange { get; set; }
+
+    private double[] _distributionData;
+    private string[] _distributionLabels;
+    private List<PartnerReturnDto> _partnerReturns = new();
+    private ChartSeries[] _historySeries;
+    private string[] _historyLabels;
+    private decimal _totalDistributed;
+    private double _averageRoi;
+    private decimal _charityContribution;
+    private DateTime _nextDistribution = DateTime.Today.AddDays(15);
+    private List<InsightDto> _insights = new();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        // Distribution breakdown
+        _distributionLabels = new[] { "Investors", "Business", "Charity" };
+        _distributionData = new[] { 60.0, 37.5, 2.5 };
+
+        // Partner returns
+        _partnerReturns = new List<PartnerReturnDto>
+        {
+            new()
+            {
+                Name = "Partner A",
+                Investment = 100000,
+                SharePercentage = 30,
+                CurrentReturn = 15000,
+                YtdReturns = 45000,
+                Roi = 15.5
+            },
+            new()
+            {
+                Name = "Partner B",
+                Investment = 75000,
+                SharePercentage = 22.5,
+                CurrentReturn = 11250,
+                YtdReturns = 33750,
+                Roi = 14.8
+            }
+        };
+
+        // Distribution history
+        _historyLabels = new[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun" };
+        _historySeries = new[]
+        {
+            new ChartSeries
+            {
+                Name = "Monthly Distribution",
+                Data = new[] { 25000.0, 27500.0, 30000.0, 28500.0, 32000.0, 35000.0 }
+            }
+        };
+
+        // Summary metrics
+        _totalDistributed = 178000;
+        _averageRoi = 15.2;
+        _charityContribution = 4450;
+
+        // Insights
+        _insights = new List<InsightDto>
+        {
+            new()
+            {
+                Message = "Partner returns have increased by 15.2% compared to last period",
+                Type = InsightType.Positive
+            },
+            new()
+            {
+                Message = "Charity contributions are on track with projections",
+                Type = InsightType.Neutral
+            }
+        };
+    }
+
+    private Color GetRoiColor(double roi) => roi switch
+    {
+        >= 15 => Color.Success,
+        >= 10 => Color.Info,
+        _ => Color.Warning
+    };
+
+    private string GetInsightIcon(InsightType type) => type switch
+    {
+        InsightType.Positive => Icons.Material.Filled.TrendingUp,
+        InsightType.Negative => Icons.Material.Filled.TrendingDown,
+        _ => Icons.Material.Filled.TrendingFlat
+    };
+
+    private Color GetInsightColor(InsightType type) => type switch
+    {
+        InsightType.Positive => Color.Success,
+        InsightType.Negative => Color.Error,
+        _ => Color.Default
+    };
+
+    private class PartnerReturnDto
+    {
+        public string Name { get; set; }
+        public decimal Investment { get; set; }
+        public double SharePercentage { get; set; }
+        public decimal CurrentReturn { get; set; }
+        public decimal YtdReturns { get; set; }
+        public double Roi { get; set; }
+    }
+
+    private class InsightDto
+    {
+        public string Message { get; set; }
+        public InsightType Type { get; set; }
+    }
+
+    private enum InsightType
+    {
+        Positive,
+        Neutral,
+        Negative
+    }
+}
