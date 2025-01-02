@@ -1,0 +1,336 @@
+@page "/customers"
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<MudContainer>
+    <MudPaper Class="pa-4">
+        <div class="d-flex justify-space-between align-center mb-4">
+            <MudText Typo="Typo.h5">Customers</MudText>
+            <MudButton Variant="Variant.Filled" 
+                      Color="Color.Primary"
+                      StartIcon="@Icons.Material.Filled.PersonAdd"
+                      OnClick="AddNewCustomer">
+                Add Customer
+            </MudButton>
+        </div>
+
+        <!-- Stats Cards -->
+        <MudGrid Class="mb-4">
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Class="pa-4" Elevation="2">
+                    <MudText Typo="Typo.subtitle2">Total Customers</MudText>
+                    <MudText Typo="Typo.h4">@_customers.Count</MudText>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Class="pa-4" Elevation="2">
+                    <MudText Typo="Typo.subtitle2">Active Members</MudText>
+                    <MudText Typo="Typo.h4" Color="Color.Success">
+                        @_customers.Count(c => c.IsActive)
+                    </MudText>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Class="pa-4" Elevation="2">
+                    <MudText Typo="Typo.subtitle2">Total Spending</MudText>
+                    <MudText Typo="Typo.h4" Color="Color.Primary">
+                        @_totalSpending.ToString("C")
+                    </MudText>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Class="pa-4" Elevation="2">
+                    <MudText Typo="Typo.subtitle2">Loyalty Points</MudText>
+                    <MudText Typo="Typo.h4" Color="Color.Warning">
+                        @_totalLoyaltyPoints.ToString("N0")
+                    </MudText>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+
+        <!-- Customer Table -->
+        <MudTable Items="@_customers" Dense="true" Hover="true" Filter="FilterFunc">
+            <ToolBarContent>
+                <MudTextField @bind-Value="_searchString"
+                             Placeholder="Search customers..."
+                             Adornment="Adornment.Start"
+                             AdornmentIcon="@Icons.Material.Filled.Search"
+                             Class="mt-0"/>
+            </ToolBarContent>
+            <HeaderContent>
+                <MudTh>Customer</MudTh>
+                <MudTh>Contact Info</MudTh>
+                <MudTh>Membership</MudTh>
+                <MudTh>Total Spent</MudTh>
+                <MudTh>Points</MudTh>
+                <MudTh>Last Visit</MudTh>
+                <MudTh>Actions</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>
+                    <div class="d-flex align-center">
+                        <MudAvatar Class="mr-2">@context.Name[0]</MudAvatar>
+                        <div>
+                            <MudText>@context.Name</MudText>
+                            <MudText Typo="Typo.caption">@context.CustomerNumber</MudText>
+                        </div>
+                    </div>
+                </MudTd>
+                <MudTd>
+                    <MudText>@context.Email</MudText>
+                    <MudText Typo="Typo.caption">@context.Phone</MudText>
+                </MudTd>
+                <MudTd>
+                    <MudChip Size="Size.Small" Color="@GetMembershipColor(context.MembershipTier)">
+                        @context.MembershipTier
+                    </MudChip>
+                </MudTd>
+                <MudTd>@context.TotalSpent.ToString("C")</MudTd>
+                <MudTd>@context.LoyaltyPoints.ToString("N0")</MudTd>
+                <MudTd>@context.LastVisit?.ToShortDateString()</MudTd>
+                <MudTd>
+                    <MudMenu Icon="@Icons.Material.Filled.MoreVert">
+                        <MudMenuItem Icon="@Icons.Material.Filled.Edit"
+                                   OnClick="@(() => EditCustomer(context))">Edit</MudMenuItem>
+                        <MudMenuItem Icon="@Icons.Material.Filled.History"
+                                   OnClick="@(() => ViewHistory(context))">History</MudMenuItem>
+                        <MudMenuItem Icon="@Icons.Material.Filled.Stars"
+                                   OnClick="@(() => ManagePoints(context))">Manage Points</MudMenuItem>
+                        @if (context.IsActive)
+                        {
+                            <MudMenuItem Icon="@Icons.Material.Filled.Block"
+                                       OnClick="@(() => DeactivateCustomer(context))">Deactivate</MudMenuItem>
+                        }
+                        else
+                        {
+                            <MudMenuItem Icon="@Icons.Material.Filled.CheckCircle"
+                                       OnClick="@(() => ActivateCustomer(context))">Activate</MudMenuItem>
+                        }
+                    </MudMenu>
+                </MudTd>
+            </RowTemplate>
+            <PagerContent>
+                <MudTablePager/>
+            </PagerContent>
+        </MudTable>
+
+        <!-- Membership Distribution -->
+        <MudGrid Class="mt-6">
+            <MudItem xs="12" md="6">
+                <MudPaper Class="pa-4">
+                    <MudText Typo="Typo.h6" Class="mb-4">Membership Distribution</MudText>
+                    <MudChart ChartType="ChartType.Pie"
+                             InputData="@_membershipData"
+                             InputLabels="@_membershipLabels"
+                             Width="100%"
+                             Height="300px"/>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudPaper Class="pa-4">
+                    <MudText Typo="Typo.h6" Class="mb-4">Recent Activity</MudText>
+                    <MudList Dense="true">
+                        @foreach (var activity in _recentActivity)
+                        {
+                            <MudListItem>
+                                <div class="d-flex justify-space-between">
+                                    <div>
+                                        <MudText>@activity.CustomerName</MudText>
+                                        <MudText Typo="Typo.caption">@activity.Action</MudText>
+                                    </div>
+                                    <MudText Typo="Typo.caption">
+                                        @activity.Date.ToShortDateString()
+                                    </MudText>
+                                </div>
+                            </MudListItem>
+                        }
+                    </MudList>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private string _searchString = "";
+    private List<CustomerDto> _customers = new();
+    private decimal _totalSpending;
+    private int _totalLoyaltyPoints;
+    private double[] _membershipData;
+    private string[] _membershipLabels;
+    private List<ActivityDto> _recentActivity = new();
+
+    protected override void OnInitialized()
+    {
+        LoadDemoData();
+    }
+
+    private void LoadDemoData()
+    {
+        _customers = new List<CustomerDto>
+        {
+            new()
+            {
+                Name = "John Smith",
+                CustomerNumber = "C001",
+                Email = "john@example.com",
+                Phone = "123-456-7890",
+                MembershipTier = "Gold",
+                TotalSpent = 5000,
+                LoyaltyPoints = 500,
+                LastVisit = DateTime.Today.AddDays(-2),
+                IsActive = true
+            },
+            new()
+            {
+                Name = "Sarah Johnson",
+                CustomerNumber = "C002",
+                Email = "sarah@example.com",
+                Phone = "123-456-7891",
+                MembershipTier = "Silver",
+                TotalSpent = 2500,
+                LoyaltyPoints = 250,
+                LastVisit = DateTime.Today.AddDays(-5),
+                IsActive = true
+            }
+        };
+
+        _totalSpending = _customers.Sum(c => c.TotalSpent);
+        _totalLoyaltyPoints = _customers.Sum(c => c.LoyaltyPoints);
+
+        _membershipLabels = new[] { "Gold", "Silver", "Bronze" };
+        _membershipData = new[] { 30.0, 45.0, 25.0 };
+
+        _recentActivity = new List<ActivityDto>
+        {
+            new()
+            {
+                CustomerName = "John Smith",
+                Action = "Made a purchase of $150",
+                Date = DateTime.Today.AddDays(-2)
+            },
+            new()
+            {
+                CustomerName = "Sarah Johnson",
+                Action = "Redeemed 100 points",
+                Date = DateTime.Today.AddDays(-3)
+            }
+        };
+    }
+
+    private bool FilterFunc(CustomerDto customer)
+    {
+        if (string.IsNullOrWhiteSpace(_searchString))
+            return true;
+
+        return customer.Name.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
+               customer.Email.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
+               customer.Phone.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
+               customer.CustomerNumber.Contains(_searchString, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private Color GetMembershipColor(string tier) => tier switch
+    {
+        "Gold" => Color.Warning,
+        "Silver" => Color.Default,
+        "Bronze" => Color.Tertiary,
+        _ => Color.Default
+    };
+
+    private async Task AddNewCustomer()
+    {
+        var dialog = await DialogService.ShowAsync<CustomerDialog>("Add Customer");
+        var result = await dialog.Result;
+        if (!result.Canceled)
+        {
+            await LoadData();
+            Snackbar.Add("Customer added successfully!", Severity.Success);
+        }
+    }
+
+    private async Task EditCustomer(CustomerDto customer)
+    {
+        var parameters = new DialogParameters { ["Customer"] = customer };
+        var dialog = await DialogService.ShowAsync<CustomerDialog>("Edit Customer", parameters);
+        var result = await dialog.Result;
+        if (!result.Canceled)
+        {
+            await LoadData();
+            Snackbar.Add("Customer updated successfully!", Severity.Success);
+        }
+    }
+
+    private async Task ViewHistory(CustomerDto customer)
+    {
+        var parameters = new DialogParameters { ["Customer"] = customer };
+        await DialogService.ShowAsync<CustomerHistoryDialog>(
+            $"Transaction History - {customer.Name}",
+            parameters
+        );
+    }
+
+    private async Task ManagePoints(CustomerDto customer)
+    {
+        var parameters = new DialogParameters { ["Customer"] = customer };
+        var dialog = await DialogService.ShowAsync<LoyaltyPointsDialog>(
+            $"Manage Points - {customer.Name}",
+            parameters
+        );
+        var result = await dialog.Result;
+        if (!result.Canceled)
+        {
+            await LoadData();
+            Snackbar.Add("Points updated successfully!", Severity.Success);
+        }
+    }
+
+    private async Task DeactivateCustomer(CustomerDto customer)
+    {
+        var parameters = new DialogParameters
+        {
+            ["ContentText"] = $"Are you sure you want to deactivate {customer.Name}?"
+        };
+        var dialog = await DialogService.ShowAsync<ConfirmationDialog>(
+            "Deactivate Customer",
+            parameters
+        );
+        var result = await dialog.Result;
+        if (!result.Canceled)
+        {
+            customer.IsActive = false;
+            Snackbar.Add("Customer deactivated successfully!", Severity.Success);
+        }
+    }
+
+    private async Task ActivateCustomer(CustomerDto customer)
+    {
+        customer.IsActive = true;
+        Snackbar.Add("Customer activated successfully!", Severity.Success);
+    }
+
+    private async Task LoadData()
+    {
+        // Replace with actual data loading when available
+        LoadDemoData();
+    }
+
+    private class CustomerDto
+    {
+        public string Name { get; set; }
+        public string CustomerNumber { get; set; }
+        public string Email { get; set; }
+        public string Phone { get; set; }
+        public string MembershipTier { get; set; }
+        public decimal TotalSpent { get; set; }
+        public int LoyaltyPoints { get; set; }
+        public DateTime? LastVisit { get; set; }
+        public bool IsActive { get; set; }
+    }
+
+    private class ActivityDto
+    {
+        public string CustomerName { get; set; }
+        public string Action { get; set; }
+        public DateTime Date { get; set; }
+    }
+}
