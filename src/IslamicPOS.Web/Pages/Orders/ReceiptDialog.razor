@@ -1,0 +1,58 @@
+@inject IJSRuntime JSRuntime
+
+<MudDialog>
+    <DialogContent>
+        <div id="receipt" class="pa-4">
+            <div class="d-flex flex-column align-center mb-4">
+                <MudText Typo="Typo.h5">Islamic POS System</MudText>
+                <MudText>Receipt #@Transaction.Id.ToString().Substring(0, 8)</MudText>
+                <MudText Typo="Typo.caption">@Transaction.TransactionDate.ToLocalTime().ToString("g")</MudText>
+            </div>
+
+            <MudDivider Class="mb-4"/>
+
+            <MudTable Items="@Transaction.Items" Dense="true" Hover="false">
+                <HeaderContent>
+                    <MudTh>Item</MudTh>
+                    <MudTh>Qty</MudTh>
+                    <MudTh>Price</MudTh>
+                    <MudTh>Total</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.Product.Name</MudTd>
+                    <MudTd>@context.Quantity</MudTd>
+                    <MudTd>@context.UnitPrice.ToString("C")</MudTd>
+                    <MudTd>@((context.UnitPrice * context.Quantity).ToString("C"))</MudTd>
+                </RowTemplate>
+            </MudTable>
+
+            <MudDivider Class="my-4"/>
+
+            <div class="d-flex justify-space-between mb-2">
+                <MudText><strong>Total</strong></MudText>
+                <MudText><strong>@Transaction.TotalAmount.ToString("C")</strong></MudText>
+            </div>
+
+            <div class="d-flex justify-space-between mb-4">
+                <MudText>Payment Method</MudText>
+                <MudText>@Transaction.PaymentMethod?.Name</MudText>
+            </div>
+
+            <MudText Align="Align.Center" Class="mt-4">Thank you for your business!</MudText>
+        </div>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@(() => MudDialog.Cancel())" Color="Color.Default">Close</MudButton>
+        <MudButton OnClick="PrintReceipt" Color="Color.Primary">Print</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    [Parameter] public Transaction Transaction { get; set; }
+
+    private async Task PrintReceipt()
+    {
+        await JSRuntime.InvokeVoidAsync("print");
+    }
+}

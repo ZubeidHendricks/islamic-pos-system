@@ -1,0 +1,283 @@
+@page "/orders/new"
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@inject IProductRepository ProductRepository
+@inject IPaymentMethodRepository PaymentMethodRepository
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge">
+    <MudGrid>
+        <!-- Product Selection -->
+        <MudItem xs="12" md="8">
+            <MudPaper Class="pa-4">
+                <MudText Typo="Typo.h6" Class="mb-4">Select Products</MudText>
+                
+                <MudTextField @bind-Value="_searchString"
+                            Label="Search products"
+                            Adornment="Adornment.Start"
+                            AdornmentIcon="@Icons.Material.Filled.Search"
+                            Class="mb-4"/>
+
+                <MudGrid>
+                    @foreach (var product in FilteredProducts)
+                    {
+                        <MudItem xs="12" sm="6" md="4">
+                            <MudCard @onclick="() => AddToCart(product)" Style="cursor: pointer;">
+                                <MudCardContent>
+                                    <MudText Typo="Typo.h6">@product.Name</MudText>
+                                    <MudText Typo="Typo.body2">@product.Price.ToString("C")</MudText>
+                                    <MudChip Color="@(product.IsHalal ? Color.Success : Color.Error)"
+                                            Size="Size.Small">
+                                        @(product.IsHalal ? "Halal" : "Non-Halal")
+                                    </MudChip>
+                                    @if (product.StockQuantity <= 0)
+                                    {
+                                        <MudChip Color="Color.Error" Size="Size.Small">
+                                            Out of Stock
+                                        </MudChip>
+                                    }
+                                </MudCardContent>
+                            </MudCard>
+                        </MudItem>
+                    }
+                </MudGrid>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Order Summary -->
+        <MudItem xs="12" md="4">
+            <MudPaper Class="pa-4">
+                <MudText Typo="Typo.h6" Class="mb-4">Order Summary</MudText>
+
+                @if (!_cartItems.Any())
+                {
+                    <MudText Class="mb-4">Cart is empty</MudText>
+                }
+                else
+                {
+                    <MudList Dense="true">
+                        @foreach (var item in _cartItems)
+                        {
+                            <MudListItem>
+                                <div class="d-flex justify-space-between align-center">
+                                    <div>
+                                        <MudText>@item.Product.Name</MudText>
+                                        <MudText Typo="Typo.caption">
+                                            @item.UnitPrice.ToString("C") x @item.Quantity
+                                        </MudText>
+                                    </div>
+                                    <div class="d-flex align-center">
+                                        <MudIconButton Icon="@Icons.Material.Filled.Remove"
+                                                     Size="Size.Small"
+                                                     OnClick="() => UpdateQuantity(item, -1)"
+                                                     Disabled="@(item.Quantity <= 1)"/>
+                                        <MudText Class="mx-2">@item.Quantity</MudText>
+                                        <MudIconButton Icon="@Icons.Material.Filled.Add"
+                                                     Size="Size.Small"
+                                                     OnClick="() => UpdateQuantity(item, 1)"/>
+                                        <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                     Size="Size.Small"
+                                                     Color="Color.Error"
+                                                     OnClick="() => RemoveFromCart(item)"/>
+                                    </div>
+                                </div>
+                            </MudListItem>
+                        }
+                    </MudList>
+
+                    <MudDivider Class="my-4"/>
+
+                    <MudText Class="mb-4">
+                        Subtotal: <strong>@CalculateSubtotal().ToString("C")</strong>
+                    </MudText>
+                }
+
+                <!-- Customer Selection -->
+                <MudAutocomplete T="CustomerDto"
+                               Label="Customer"
+                               @bind-Value="_selectedCustomer"
+                               SearchFunc="@SearchCustomers"
+                               ToStringFunc="@(c => c?.Name ?? "")"
+                               AdornmentIcon="@Icons.Material.Filled.Person"
+                               Class="mb-4"/>
+
+                <!-- Payment Method -->
+                <MudSelect T="PaymentMethod"
+                          Label="Payment Method"
+                          @bind-Value="_selectedPaymentMethod"
+                          Class="mb-4">
+                    @foreach (var method in _paymentMethods)
+                    {
+                        <MudSelectItem Value="@method">
+                            @method.Name (@(method.IsShariahCompliant ? "Shariah Compliant" : "Non-Compliant"))
+                        </MudSelectItem>
+                    }
+                </MudSelect>
+
+                <!-- Actions -->
+                <MudButton Variant="Variant.Filled"
+                          Color="Color.Primary"
+                          OnClick="ProcessOrder"
+                          Disabled="!CanProcessOrder"
+                          FullWidth="true">
+                    Complete Order (@CalculateTotal().ToString("C"))
+                </MudButton>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+</MudContainer>
+
+@code {
+    private string _searchString = "";
+    private List<Product> _allProducts = new();
+    private List<TransactionItem> _cartItems = new();
+    private List<PaymentMethod> _paymentMethods = new();
+    private CustomerDto _selectedCustomer;
+    private PaymentMethod _selectedPaymentMethod;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadProducts();
+        await LoadPaymentMethods();
+    }
+
+    private async Task LoadProducts()
+    {
+        _allProducts = (await ProductRepository.GetAllAsync()).ToList();
+    }
+
+    private async Task LoadPaymentMethods()
+    {
+        _paymentMethods = (await PaymentMethodRepository.GetAllAsync()).ToList();
+    }
+
+    private IEnumerable<Product> FilteredProducts
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(_searchString))
+                return _allProducts;
+
+            return _allProducts.Where(p => 
+                p.Name.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
+                p.SKU.Contains(_searchString, StringComparison.OrdinalIgnoreCase)
+            );
+        }
+    }
+
+    private void AddToCart(Product product)
+    {
+        if (product.StockQuantity <= 0)
+        {
+            Snackbar.Add("Product is out of stock", Severity.Warning);
+            return;
+        }
+
+        var existingItem = _cartItems.FirstOrDefault(i => i.ProductId == product.Id);
+        if (existingItem != null)
+        {
+            UpdateQuantity(existingItem, 1);
+            return;
+        }
+
+        _cartItems.Add(new TransactionItem
+        {
+            ProductId = product.Id,
+            Product = product,
+            Quantity = 1,
+            UnitPrice = product.Price
+        });
+    }
+
+    private void UpdateQuantity(TransactionItem item, int change)
+    {
+        var newQuantity = item.Quantity + change;
+        if (newQuantity <= 0) return;
+        
+        if (newQuantity > item.Product.StockQuantity)
+        {
+            Snackbar.Add("Not enough stock available", Severity.Warning);
+            return;
+        }
+
+        item.Quantity = newQuantity;
+    }
+
+    private void RemoveFromCart(TransactionItem item)
+    {
+        _cartItems.Remove(item);
+    }
+
+    private decimal CalculateSubtotal()
+    {
+        return _cartItems.Sum(i => i.UnitPrice * i.Quantity);
+    }
+
+    private decimal CalculateTotal()
+    {
+        return CalculateSubtotal();
+    }
+
+    private bool CanProcessOrder =>
+        _cartItems.Any() && _selectedCustomer != null && _selectedPaymentMethod != null;
+
+    private async Task<IEnumerable<CustomerDto>> SearchCustomers(string value)
+    {
+        // Replace with actual customer search
+        await Task.Delay(1);
+        return new List<CustomerDto>
+        {
+            new() { Name = "John Smith", Id = Guid.NewGuid() },
+            new() { Name = "Sarah Johnson", Id = Guid.NewGuid() }
+        };
+    }
+
+    private async Task ProcessOrder()
+    {
+        if (!_selectedPaymentMethod.IsShariahCompliant)
+        {
+            var confirm = await DialogService.ShowMessageBox(
+                "Non-Compliant Payment Method",
+                "The selected payment method is not Shariah compliant. Do you want to proceed?",
+                yesText: "Proceed",
+                noText: "Cancel"
+            );
+
+            if (confirm != true) return;
+        }
+
+        var transaction = new Transaction
+        {
+            TransactionDate = DateTime.UtcNow,
+            CustomerId = _selectedCustomer.Id.ToString(),
+            PaymentMethodId = _selectedPaymentMethod.Id.ToString(),
+            PaymentMethod = _selectedPaymentMethod,
+            TotalAmount = CalculateTotal(),
+            Items = _cartItems
+        };
+
+        // TODO: Process transaction
+
+        Snackbar.Add("Order processed successfully!", Severity.Success);
+        await PrintReceipt(transaction);
+        ResetOrder();
+    }
+
+    private async Task PrintReceipt(Transaction transaction)
+    {
+        var parameters = new DialogParameters { ["Transaction"] = transaction };
+        await DialogService.ShowAsync<ReceiptDialog>("Order Receipt", parameters);
+    }
+
+    private void ResetOrder()
+    {
+        _cartItems.Clear();
+        _selectedCustomer = null;
+        _selectedPaymentMethod = null;
+    }
+
+    private class CustomerDto
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; }
+    }
+}
