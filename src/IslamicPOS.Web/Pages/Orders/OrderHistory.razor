@@ -1,0 +1,304 @@
+@page "/orders/history"
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<MudContainer>
+    <MudPaper Class="pa-4">
+        <!-- Header -->
+        <MudText Typo="Typo.h5" Class="mb-4">Order History</MudText>
+
+        <!-- Filters -->
+        <MudGrid Class="mb-4">
+            <MudItem xs="12" md="3">
+                <MudDateRangePicker @bind-DateRange="_dateRange"
+                                   Label="Date Range"
+                                   AutoClose="true"/>
+            </MudItem>
+            <MudItem xs="12" md="3">
+                <MudSelect T="string" Label="Payment Method" @bind-Value="_selectedPaymentMethod">
+                    <MudSelectItem Value="@string.Empty">All Methods</MudSelectItem>
+                    @foreach (var method in _paymentMethods)
+                    {
+                        <MudSelectItem Value="@method">@method</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" md="3">
+                <MudTextField @bind-Value="_customerSearch"
+                            Label="Customer Search"
+                            Adornment="Adornment.Start"
+                            AdornmentIcon="@Icons.Material.Filled.Search"/>
+            </MudItem>
+            <MudItem xs="12" md="3">
+                <MudButton Variant="Variant.Filled"
+                          Color="Color.Primary"
+                          OnClick="FilterTransactions"
+                          Class="mt-4">
+                    Apply Filters
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+
+        <!-- Summary Cards -->
+        <MudGrid Class="mb-4">
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Class="pa-4" Elevation="2">
+                    <MudText Typo="Typo.subtitle2">Total Orders</MudText>
+                    <MudText Typo="Typo.h4">@_filteredTransactions.Count</MudText>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Class="pa-4" Elevation="2">
+                    <MudText Typo="Typo.subtitle2">Total Revenue</MudText>
+                    <MudText Typo="Typo.h4" Color="Color.Success">
+                        @(_filteredTransactions.Sum(t => t.TotalAmount).ToString("C"))
+                    </MudText>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Class="pa-4" Elevation="2">
+                    <MudText Typo="Typo.subtitle2">Avg. Order Value</MudText>
+                    <MudText Typo="Typo.h4" Color="Color.Primary">
+                        @(_filteredTransactions.Any() 
+                            ? (_filteredTransactions.Average(t => t.TotalAmount)).ToString("C")
+                            : "0")
+                    </MudText>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Class="pa-4" Elevation="2">
+                    <MudText Typo="Typo.subtitle2">Compliant Transactions</MudText>
+                    <MudText Typo="Typo.h4" Color="Color.Info">
+                        @(_filteredTransactions.Count(t => t.PaymentMethod?.IsShariahCompliant ?? false))
+                    </MudText>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+
+        <!-- Transactions Table -->
+        <MudTable Items="@_filteredTransactions" 
+                  Dense="true" 
+                  Hover="true"
+                  Breakpoint="Breakpoint.Sm"
+                  Loading="@_loading">
+            <HeaderContent>
+                <MudTh>Order #</MudTh>
+                <MudTh>Date</MudTh>
+                <MudTh>Customer</MudTh>
+                <MudTh>Items</MudTh>
+                <MudTh>Total</MudTh>
+                <MudTh>Payment</MudTh>
+                <MudTh>Status</MudTh>
+                <MudTh>Actions</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Order #">@context.Id.ToString().Substring(0, 8)</MudTd>
+                <MudTd DataLabel="Date">@context.TransactionDate.ToLocalTime().ToString("g")</MudTd>
+                <MudTd DataLabel="Customer">@GetCustomerName(context.CustomerId)</MudTd>
+                <MudTd DataLabel="Items">@context.Items.Count items</MudTd>
+                <MudTd DataLabel="Total">@context.TotalAmount.ToString("C")</MudTd>
+                <MudTd DataLabel="Payment">
+                    <MudChip Size="Size.Small" 
+                            Color="@(context.PaymentMethod?.IsShariahCompliant == true 
+                                    ? Color.Success 
+                                    : Color.Error)">
+                        @context.PaymentMethod?.Name
+                    </MudChip>
+                </MudTd>
+                <MudTd DataLabel="Status">
+                    <MudChip Size="Size.Small" Color="@GetStatusColor(context.Status)">
+                        @context.Status
+                    </MudChip>
+                </MudTd>
+                <MudTd>
+                    <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small">
+                        <MudMenuItem Icon="@Icons.Material.Filled.Visibility"
+                                   OnClick="@(() => ViewDetails(context))">
+                            View Details
+                        </MudMenuItem>
+                        <MudMenuItem Icon="@Icons.Material.Filled.Print"
+                                   OnClick="@(() => PrintReceipt(context))">
+                            Print Receipt
+                        </MudMenuItem>
+                        @if (context.Status != "Completed")
+                        {
+                            <MudMenuItem Icon="@Icons.Material.Filled.Cancel"
+                                       OnClick="@(() => CancelOrder(context))">
+                                Cancel Order
+                            </MudMenuItem>
+                        }
+                    </MudMenu>
+                </MudTd>
+            </RowTemplate>
+            <PagerContent>
+                <MudTablePager/>
+            </PagerContent>
+        </MudTable>
+
+        <!-- Analysis Charts -->
+        <MudGrid Class="mt-6">
+            <MudItem xs="12" md="6">
+                <MudPaper Class="pa-4">
+                    <MudText Typo="Typo.h6" Class="mb-4">Daily Sales Trend</MudText>
+                    <MudChart ChartType="ChartType.Line"
+                             ChartSeries="@_dailySalesSeries"
+                             XAxisLabels="@_dailySalesLabels"
+                             Width="100%"
+                             Height="300px"/>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudPaper Class="pa-4">
+                    <MudText Typo="Typo.h6" Class="mb-4">Payment Methods</MudText>
+                    <MudChart ChartType="ChartType.Pie"
+                             InputData="@_paymentMethodData"
+                             InputLabels="@_paymentMethodLabels"
+                             Width="100%"
+                             Height="300px"/>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private bool _loading;
+    private DateRange _dateRange = new(DateTime.Today.AddDays(-30), DateTime.Today);
+    private string _selectedPaymentMethod = "";
+    private string _customerSearch = "";
+    private List<Transaction> _allTransactions = new();
+    private List<Transaction> _filteredTransactions = new();
+    private List<string> _paymentMethods = new();
+
+    // Chart data
+    private ChartSeries[] _dailySalesSeries;
+    private string[] _dailySalesLabels;
+    private double[] _paymentMethodData;
+    private string[] _paymentMethodLabels;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        _loading = true;
+        try
+        {
+            // Sample data - replace with actual data loading
+            _allTransactions = new List<Transaction>
+            {
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    TransactionDate = DateTime.Now.AddDays(-1),
+                    CustomerId = "C001",
+                    TotalAmount = 150.00m,
+                    PaymentMethod = new PaymentMethod { Name = "Cash", IsShariahCompliant = true },
+                    Status = "Completed",
+                    Items = new List<TransactionItem>
+                    {
+                        new() { Quantity = 2, UnitPrice = 75.00m }
+                    }
+                }
+            };
+
+            _paymentMethods = new List<string> { "Cash", "Card", "Bank Transfer" };
+            await FilterTransactions();
+            await LoadChartData();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task FilterTransactions()
+    {
+        _filteredTransactions = _allTransactions
+            .Where(t => t.TransactionDate >= _dateRange.Start && t.TransactionDate <= _dateRange.End)
+            .Where(t => string.IsNullOrEmpty(_selectedPaymentMethod) || 
+                       t.PaymentMethod?.Name == _selectedPaymentMethod)
+            .Where(t => string.IsNullOrEmpty(_customerSearch) ||
+                       GetCustomerName(t.CustomerId).Contains(_customerSearch, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+    }
+
+    private async Task LoadChartData()
+    {
+        var dailySales = _filteredTransactions
+            .GroupBy(t => t.TransactionDate.Date)
+            .OrderBy(g => g.Key)
+            .ToList();
+
+        _dailySalesLabels = dailySales.Select(g => g.Key.ToString("MM/dd")).ToArray();
+        _dailySalesSeries = new[]
+        {
+            new ChartSeries
+            {
+                Name = "Daily Sales",
+                Data = dailySales.Select(g => (double)g.Sum(t => t.TotalAmount)).ToArray()
+            }
+        };
+
+        var paymentMethodSales = _filteredTransactions
+            .GroupBy(t => t.PaymentMethod?.Name ?? "Unknown")
+            .OrderByDescending(g => g.Sum(t => t.TotalAmount))
+            .ToList();
+
+        _paymentMethodLabels = paymentMethodSales.Select(g => g.Key).ToArray();
+        _paymentMethodData = paymentMethodSales
+            .Select(g => (double)g.Sum(t => t.TotalAmount))
+            .ToArray();
+    }
+
+    private string GetCustomerName(string customerId)
+    {
+        // Replace with customer lookup
+        return "Customer " + customerId;
+    }
+
+    private Color GetStatusColor(string status) => status switch
+    {
+        "Completed" => Color.Success,
+        "Pending" => Color.Warning,
+        "Cancelled" => Color.Error,
+        _ => Color.Default
+    };
+
+    private async Task ViewDetails(Transaction transaction)
+    {
+        var parameters = new DialogParameters { ["Transaction"] = transaction };
+        await DialogService.ShowAsync<TransactionDetailsDialog>(
+            $"Order Details #{transaction.Id.ToString().Substring(0, 8)}",
+            parameters
+        );
+    }
+
+    private async Task PrintReceipt(Transaction transaction)
+    {
+        var parameters = new DialogParameters { ["Transaction"] = transaction };
+        await DialogService.ShowAsync<ReceiptDialog>("Order Receipt", parameters);
+    }
+
+    private async Task CancelOrder(Transaction transaction)
+    {
+        var parameters = new DialogParameters
+        {
+            ["ContentText"] = "Are you sure you want to cancel this order?"
+        };
+
+        var dialog = await DialogService.ShowAsync<ConfirmationDialog>(
+            "Cancel Order",
+            parameters
+        );
+
+        var result = await dialog.Result;
+        if (!result.Canceled)
+        {
+            transaction.Status = "Cancelled";
+            Snackbar.Add("Order cancelled successfully", Severity.Success);
+        }
+    }
+}
