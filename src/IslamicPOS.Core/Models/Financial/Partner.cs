@@ -8,6 +8,8 @@ public class Partner : Entity
     public string ContactNumber { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public decimal SharePercentage { get; set; }
+    public decimal InvestmentAmount { get; set; }
     public bool IsActive { get; set; } = true;
     public string Notes { get; set; } = string.Empty;
+    public bool IsDeleted { get; set; }
 }
