@@ -1,10 +1,13 @@
 bin/
 obj/
 .vs/
+Debug/
+Release/
 *.user
 *.suo
 *.cache
 *.dll
-*.exe
 *.pdb
 *.log
+.vscode/
+.idea/

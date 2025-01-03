@@ -1,9 +1,8 @@
 using IslamicPOS.Core.Common;
-using IslamicPOS.Core.Models.IslamicFinance.Interfaces;
 
 namespace IslamicPOS.Core.Models.IslamicFinance;
 
-public class ProfitSharing : Entity, IProfitSharing
+public class ProfitSharing : Entity
 {
     public decimal TotalAmount { get; set; }
     public DateTime PeriodStart { get; set; }
