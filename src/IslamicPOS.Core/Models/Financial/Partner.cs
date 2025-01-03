@@ -11,5 +11,4 @@ public class Partner : Entity
     public decimal InvestmentAmount { get; set; }
     public bool IsActive { get; set; } = true;
     public string Notes { get; set; } = string.Empty;
-    public bool IsDeleted { get; set; }
 }
