@@ -2,6 +2,8 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{DCFFD3C6-0C0E-4E43-8C7C-66F1F4F3BA3E}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IslamicPOS.Core", "src\IslamicPOS.Core\IslamicPOS.Core.csproj", "{12345678-1234-1234-1234-123456789012}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IslamicPOS.Infrastructure", "src\IslamicPOS.Infrastructure\IslamicPOS.Infrastructure.csproj", "{23456789-2345-2345-2345-234567890123}"
@@ -26,5 +28,13 @@ Global
 		{34567890-3456-3456-3456-345678901234}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{34567890-3456-3456-3456-345678901234}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{34567890-3456-3456-3456-345678901234}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{12345678-1234-1234-1234-123456789012} = {DCFFD3C6-0C0E-4E43-8C7C-66F1F4F3BA3E}
+		{23456789-2345-2345-2345-234567890123} = {DCFFD3C6-0C0E-4E43-8C7C-66F1F4F3BA3E}
+		{34567890-3456-3456-3456-345678901234} = {DCFFD3C6-0C0E-4E43-8C7C-66F1F4F3BA3E}
 	EndGlobalSection
 EndGlobal
