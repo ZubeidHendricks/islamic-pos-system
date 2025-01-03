@@ -1,4 +1,3 @@
-using IslamicPOS.Core.DTOs;
 using IslamicPOS.Core.Models.Financial;
 using IslamicPOS.Infrastructure.Data;
 using Microsoft.AspNetCore.Mvc;
@@ -18,86 +17,49 @@ public class PartnersController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<PartnerDto>>> GetPartners()
+    public async Task<ActionResult<IEnumerable<Partner>>> GetPartners()
     {
-        var partners = await _context.Partners
-            .Select(p => new PartnerDto
-            {
-                Id = p.Id,
-                Name = p.Name,
-                ContactNumber = p.ContactNumber,
-                Email = p.Email,
-                SharePercentage = p.SharePercentage,
-                IsActive = p.IsActive,
-                Notes = p.Notes
-            })
-            .ToListAsync();
-
-        return Ok(partners);
+        return await _context.Partners.Where(p => !p.IsDeleted).ToListAsync();
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<PartnerDto>> GetPartner(Guid id)
+    public async Task<ActionResult<Partner>> GetPartner(Guid id)
     {
         var partner = await _context.Partners.FindAsync(id);
 
-        if (partner == null)
-        {
+        if (partner == null || partner.IsDeleted)
             return NotFound();
-        }
 
-        var dto = new PartnerDto
-        {
-            Id = partner.Id,
-            Name = partner.Name,
-            ContactNumber = partner.ContactNumber,
-            Email = partner.Email,
-            SharePercentage = partner.SharePercentage,
-            IsActive = partner.IsActive,
-            Notes = partner.Notes
-        };
-
-        return Ok(dto);
+        return partner;
     }
 
     [HttpPost]
-    public async Task<ActionResult<PartnerDto>> CreatePartner(PartnerDto partnerDto)
+    public async Task<ActionResult<Partner>> CreatePartner(Partner partner)
     {
-        var partner = new Partner
-        {
-            Name = partnerDto.Name,
-            ContactNumber = partnerDto.ContactNumber,
-            Email = partnerDto.Email,
-            SharePercentage = partnerDto.SharePercentage,
-            IsActive = partnerDto.IsActive,
-            Notes = partnerDto.Notes
-        };
-
         _context.Partners.Add(partner);
         await _context.SaveChangesAsync();
 
-        partnerDto.Id = partner.Id;
-
-        return CreatedAtAction(nameof(GetPartner), new { id = partner.Id }, partnerDto);
+        return CreatedAtAction(nameof(GetPartner), new { id = partner.Id }, partner);
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> UpdatePartner(Guid id, PartnerDto partnerDto)
+    public async Task<IActionResult> UpdatePartner(Guid id, Partner partner)
     {
-        var partner = await _context.Partners.FindAsync(id);
+        if (id != partner.Id)
+            return BadRequest();
 
-        if (partner == null)
-        {
+        var existingPartner = await _context.Partners.FindAsync(id);
+        if (existingPartner == null || existingPartner.IsDeleted)
             return NotFound();
-        }
 
-        partner.Name = partnerDto.Name;
-        partner.ContactNumber = partnerDto.ContactNumber;
-        partner.Email = partnerDto.Email;
-        partner.SharePercentage = partnerDto.SharePercentage;
-        partner.IsActive = partnerDto.IsActive;
-        partner.Notes = partnerDto.Notes;
-        partner.UpdatedAt = DateTime.UtcNow;
+        existingPartner.Name = partner.Name;
+        existingPartner.ContactNumber = partner.ContactNumber;
+        existingPartner.Email = partner.Email;
+        existingPartner.SharePercentage = partner.SharePercentage;
+        existingPartner.InvestmentAmount = partner.InvestmentAmount;
+        existingPartner.IsActive = partner.IsActive;
+        existingPartner.Notes = partner.Notes;
+        existingPartner.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
 
@@ -108,12 +70,11 @@ public class PartnersController : ControllerBase
     public async Task<IActionResult> DeletePartner(Guid id)
     {
         var partner = await _context.Partners.FindAsync(id);
-        if (partner == null)
-        {
+        if (partner == null || partner.IsDeleted)
             return NotFound();
-        }
 
-        _context.Partners.Remove(partner);
+        partner.IsDeleted = true;
+        partner.UpdatedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
 
         return NoContent();
