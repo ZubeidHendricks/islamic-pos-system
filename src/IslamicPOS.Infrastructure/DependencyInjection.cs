@@ -1,31 +1,29 @@
-using IslamicPOS.Infrastructure.Persistence;
+using IslamicPOS.Core.Models.Auth;
+using IslamicPOS.Infrastructure.Data;
 using IslamicPOS.Infrastructure.Services;
-using IslamicPOS.Infrastructure.Repositories;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace IslamicPOS.Infrastructure;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddInfrastructure(
-        this IServiceCollection services,
-        IConfiguration configuration)
+    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddDbContext<ApplicationDbContext>(options =>
             options.UseSqlServer(
                 configuration.GetConnectionString("DefaultConnection"),
-                b => b.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)));
+                x => x.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)));
 
-        // Register repositories
-        services.AddScoped<IProductRepository, ProductRepository>();
-        services.AddScoped<ITransactionRepository, TransactionRepository>();
-        services.AddScoped<IPartnerRepository, PartnerRepository>();
-        services.AddScoped<IProfitSharingRepository, ProfitSharingRepository>();
-        services.AddScoped<IZakatCalculationRepository, ZakatCalculationRepository>();
+        services.AddIdentity<ApplicationUser, IdentityRole>()
+            .AddEntityFrameworkStores<ApplicationDbContext>()
+            .AddDefaultTokenProviders();
 
-        // Register services
-        services.AddScoped<IFinancialService, FinancialService>();
-        services.AddScoped<IZakatService, ZakatService>();
-        services.AddScoped<IProfitSharingService, ProfitSharingService>();
+        services.AddScoped<JwtService>();
+        services.AddScoped<ProfitSharingService>();
+        services.AddScoped<PredictiveAnalyticsService>();
 
         return services;
     }
